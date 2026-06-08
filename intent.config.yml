@@ -1,0 +1,38 @@
+# intent.config.yml
+product:
+  name: "Intent Harness"
+  description: "A requirement harness for AI-assisted product development."
+
+github:
+  org: "mrs-kim"
+  repo: "intent-harness"
+
+design-system:
+  repo: ""
+
+teams:
+  - name: harness-maintainers
+    github-team: "@mrs-kim/harness-maintainers"
+  - name: design-team
+    github-team: "@mrs-kim/design"
+
+agents:
+  spec:
+    enabled: true
+    max-clarifying-questions: 2
+  decision:
+    enabled: true
+    issue-label: "decision-needed"
+  trace:
+    enabled: true
+    include:
+      - "src/**/*.js"
+    exclude:
+      - "**/*.test.*"
+      - "**/node_modules/**"
+  test:
+    enabled: false
+
+enforcement:
+  warn-only: true
+  unbuilt-warning-days: 30

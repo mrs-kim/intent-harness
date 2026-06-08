@@ -288,6 +288,7 @@ async function upgrade() {
     { src: "src/validate.js",                 dst: ".intent/scripts/validate.js" },
     { src: "src/narrate.js",                  dst: ".intent/scripts/narrate.js" },
     { src: "src/flip-legitimacy.js",          dst: ".intent/scripts/flip-legitimacy.js" },
+    { src: "src/review.js",                   dst: ".intent/scripts/review.js" },
     { src: "src/agents/spec-agent.js",        dst: ".intent/scripts/agents/spec-agent.js" },
     { src: "src/agents/trace-agent.js",       dst: ".intent/scripts/agents/trace-agent.js" },
     { src: "src/agents/decision-agent.js",    dst: ".intent/scripts/agents/decision-agent.js" },
@@ -388,6 +389,9 @@ if (command === "init") {
   // Pass remaining args through to ingest agent
   process.argv = [process.argv[0], process.argv[1], ...process.argv.slice(3)];
   require("./agents/ingest-agent.js");
+} else if (command === "review") {
+  process.argv = [process.argv[0], process.argv[1], ...process.argv.slice(3)];
+  require("./review.js");
 } else if (command === "domains") {
   // List all domains — the thing a new team member runs first
   const path = require("path");
@@ -429,6 +433,9 @@ Commands:
   intent trace                         Full source scan and traceability update
   intent test [req_id]                 Generate acceptance criteria
   intent decisions                     Run conflict, gap, and revisit checks
+  intent review                        Browse proposed records in the browser
+  intent review --all                  Browse all records including approved
+  intent review --domain=<id>          Limit review to one domain
 
 Ingest examples:
   intent ingest --from=./docs/

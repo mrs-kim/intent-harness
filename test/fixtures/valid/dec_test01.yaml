@@ -1,0 +1,20 @@
+id: dec_test01
+type: decision
+title: Test fixtures do not use real product data
+domain: dom_test01
+outcome: excluded
+rationale: >
+  Using real product data in test fixtures creates coupling between
+  the test suite and the product requirements.
+revisit-when: >
+  If integration tests require real record shapes, add a separate
+  fixtures directory for integration tests.
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-01-01"
+  updated: "2026-01-01"
+  authored-by: test-suite
+  approved-by: test-suite
+  approved-date: "2026-01-01"

@@ -1,0 +1,22 @@
+boundary:
+  excludes:
+  - Product-specific requirement records (those belong to each project repo)
+  - The Anthropic API itself
+  - GitHub's infrastructure
+  includes:
+  - Record schema definitions and validation
+  - Graph loading and querying
+  - CLI commands and agent orchestration
+  - Template scaffolding for project repos
+  - Legitimacy flip on merge
+description: The requirement harness itself — schema validation, graph traversal,
+  CLI, and agent orchestration.
+id: dom_hrns4x2k
+meta:
+  created: '2026-06-01'
+  updated: '2026-06-01'
+owner-team: harness-maintainers
+status:
+  lifecycle: active
+title: Harness Core
+type: domain

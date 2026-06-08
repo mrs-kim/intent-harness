@@ -1,0 +1,15 @@
+id: dom_test01
+type: domain
+title: Test Domain
+description: A domain used in the test suite. Does not represent real product behavior.
+owner-team: test-team
+boundary:
+  includes:
+    - Test behaviors
+  excludes:
+    - Anything real
+status:
+  lifecycle: active
+meta:
+  created: "2026-01-01"
+  updated: "2026-01-01"

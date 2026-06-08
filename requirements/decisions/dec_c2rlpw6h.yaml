@@ -1,0 +1,20 @@
+domain: dom_hrns4x2k
+id: dec_c2rlpw6h
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  created: '2026-06-01'
+  updated: '2026-06-01'
+outcome: excluded
+rationale: Human-readable IDs like req-auth-email-verify encode meaning that becomes
+  wrong when the record is renamed or restructured. Opaque IDs like req_7f3a2c survive
+  any reorganization. The title carries the human meaning; the ID carries only identity.
+revisit-when: If a compelling use case emerges where opaque IDs cause significant
+  friction — for example, manual cross-referencing in prose documentation — consider
+  a stable slug field that is separate from the ID and can change without breaking
+  references.
+status:
+  legitimacy: approved
+  lifecycle: active
+title: Record IDs are opaque and permanent, not human-readable slugs
+type: decision

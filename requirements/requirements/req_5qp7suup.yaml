@@ -1,0 +1,23 @@
+behavior: When ingesting existing documentation, the agent first identifies candidate
+  domains and presents them for human review. After confirmation, it extracts records
+  for each domain separately and opens one PR per domain. Humans review and merge
+  domain PRs independently.
+domain: dom_hrns4x2k
+id: req_5qp7suup
+job: job_jipb4idv
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  created: '2026-06-01'
+  updated: '2026-06-01'
+rationale: One massive PR with every inferred record is unreviable. Domain-by-domain
+  PRs let teams merge what they're confident about and hold what they're not.
+status:
+  implementation: complete
+  legitimacy: approved
+  lifecycle: active
+title: Ingestion processes existing documentation domain by domain with one PR per
+  domain
+traces:
+- src/agents/ingest-agent.js
+type: requirement

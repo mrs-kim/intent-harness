@@ -1,0 +1,29 @@
+id: ds_7nq2px
+type: design-spec
+title: Export CSV button in team dashboard header
+domain: dom_4xkq2m
+requirement: req_cv3p8x
+design-principle: dp_8qr3nt
+figma: https://www.figma.com/file/xxxxxxxxxxxxx/onboarding-dashboard?node-id=123%3A456
+figma-version: "2026-05-14"
+design-system-ref: button-secondary@3.1.0
+notes: >
+  Secondary button, right-aligned in the dashboard header row alongside
+  existing header actions. Label: "Export CSV". On click, the button enters
+  a loading state (spinner replaces label) until the download begins.
+  No modal, no confirmation step — the action is immediately reversible
+  since it only downloads, it doesn't mutate data.
+  Do not use a warning or destructive button variant — this is a read action.
+relationships:
+  related:
+    - dp_8qr3nt
+status:
+  legitimacy: approved
+  lifecycle: active
+  implementation: unbuilt
+meta:
+  created: "2026-05-14"
+  updated: "2026-05-14"
+  authored-by: spec-agent
+  approved-by: design-lead
+  approved-date: "2026-05-14"

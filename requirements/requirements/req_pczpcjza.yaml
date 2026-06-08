@@ -1,0 +1,22 @@
+behavior: The canonical hierarchy is expressed as a type field on each record, not
+  as a directory convention. Records can be reorganized across directories without
+  breaking the graph as long as IDs remain stable.
+domain: dom_hrns4x2k
+id: req_pczpcjza
+job: job_8ib1lhuo
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  created: '2026-06-01'
+  updated: '2026-06-01'
+rationale: File-path-typed systems break when repos split or reorganize. Type fields
+  survive any structural change.
+status:
+  implementation: complete
+  legitimacy: approved
+  lifecycle: active
+title: Records are schema-typed, not file-path-typed
+traces:
+- src/agents/lib/graph.js
+- src/validate.js
+type: requirement

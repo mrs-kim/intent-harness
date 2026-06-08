@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test suite
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: ["18", "20", "22"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run test suite
+        run: npm test
+
+  validate-self:
+    name: Validate harness own requirement records
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate own requirement records
+        run: npm run validate-self
+
+  lint-structure:
+    name: Verify package structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required files exist
+        run: |
+          echo "Checking required files..."
+          required=(
+            "src/intent.js"
+            "src/validate.js"
+            "src/narrate.js"
+            "src/flip-legitimacy.js"
+            "src/agents/spec-agent.js"
+            "src/agents/trace-agent.js"
+            "src/agents/decision-agent.js"
+            "src/agents/test-agent.js"
+            "src/agents/ingest-agent.js"
+            "src/agents/lib/graph.js"
+            "src/agents/lib/github.js"
+            "src/agents/lib/claude.js"
+            "src/agents/lib/ids.js"
+            "src/agents/lib/figma.js"
+            "src/agents/lib/fetcher.js"
+            "src/agents/lib/extractor.js"
+            "src/schemas/requirement.schema.json"
+            "src/schemas/job.schema.json"
+            "src/schemas/domain.schema.json"
+            "src/schemas/decision.schema.json"
+            "src/schemas/design-principle.schema.json"
+            "src/schemas/design-spec.schema.json"
+            "templates/.github/workflows/requirement-gate.yml"
+            "templates/.github/workflows/spec-agent-issue.yml"
+            "templates/.github/workflows/trace-agent.yml"
+            "templates/.github/workflows/decision-agent.yml"
+            "templates/.github/workflows/test-agent.yml"
+            "templates/intent.config.yml"
+            "templates/INTENT.md"
+            "README.md"
+            "package.json"
+          )
+
+          missing=0
+          for f in "${required[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "  ✗ Missing: $f"
+              missing=$((missing + 1))
+            else
+              echo "  ✓ $f"
+            fi
+          done
+
+          if [ $missing -gt 0 ]; then
+            echo ""
+            echo "✗ $missing required file(s) missing"
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ All required files present"
+
+      - name: Verify templates directory is complete
+        run: |
+          echo "Checking templates..."
+          # All template files should be valid YAML or have a recognized extension
+          find templates/ -name "*.yaml" -o -name "*.yml" | while read f; do
+            node -e "require('js-yaml').load(require('fs').readFileSync('$f','utf8'))" 2>/dev/null \
+              && echo "  ✓ $f" \
+              || echo "  ✗ Invalid YAML: $f"
+          done

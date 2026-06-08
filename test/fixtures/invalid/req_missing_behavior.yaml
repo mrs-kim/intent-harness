@@ -1,0 +1,9 @@
+id: req_bad01
+type: requirement
+title: This requirement is missing its behavior field
+domain: dom_test01
+job: job_test01
+status:
+  legitimacy: proposed
+  lifecycle: active
+  implementation: unbuilt

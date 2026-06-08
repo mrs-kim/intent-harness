@@ -1,0 +1,10 @@
+id: req_bad03
+type: requirement
+title: This requirement references a non-existent job
+domain: dom_test01
+job: job_doesnotexist
+behavior: Does something.
+status:
+  legitimacy: proposed
+  lifecycle: active
+  implementation: unbuilt

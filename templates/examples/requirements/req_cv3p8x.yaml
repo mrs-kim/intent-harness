@@ -1,0 +1,47 @@
+acceptance-criteria:
+- given: An admin is viewing the team dashboard
+  then: A CSV file downloads containing name, email, and completion status for all
+    current members
+  when: They trigger the CSV export
+- given: The team has more than 100 members
+  then: The trigger element shows a loading state until the download begins
+  when: The export is triggered
+- given: A member has left the team
+  then: The departed member does not appear in the CSV
+  when: The export is triggered
+behavior: 'An admin viewing the team dashboard can trigger a CSV export containing
+  each current team member''s name, email, and onboarding completion status. The file
+  downloads in the browser. For large teams the download may take a few seconds; the
+  trigger element reflects this with a loading state.
+
+  '
+domain: dom_4xkq2m
+id: req_cv3p8x
+job: job_4xkq2m
+meta:
+  approved-by: product-owner
+  approved-date: '2026-05-14'
+  authored-by: spec-agent
+  created: '2026-05-14'
+  updated: '2026-05-14'
+rationale: 'Leadership reporting currently requires admins to manually copy data from
+  the dashboard. This is error-prone and time-consuming. A direct export removes that
+  friction without requiring a reporting integration.
+
+  '
+relationships:
+  depends_on:
+  - dec_8sx1qr
+  related:
+  - ds_7nq2px
+status:
+  implementation: unbuilt
+  legitimacy: approved
+  lifecycle: active
+tests:
+- tests/onboarding/export.test.ts
+title: Admins can export team onboarding status as CSV
+traces:
+- src/features/onboarding/export.ts
+- src/api/onboarding/csv.ts
+type: requirement

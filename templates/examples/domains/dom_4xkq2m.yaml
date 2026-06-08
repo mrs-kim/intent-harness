@@ -1,0 +1,25 @@
+boundary:
+  excludes:
+  - Onboarding content authoring and management
+  - User authentication and identity (belongs to Auth domain)
+  - Billing and seat management (belongs to Billing domain)
+  includes:
+  - Onboarding completion tracking per team member
+  - Admin visibility into team onboarding status
+  - Reminder and follow-up actions for incomplete onboarding
+  - Onboarding status exports and reporting
+description: 'Everything related to getting team members through the onboarding process
+  — tracking progress, admin visibility, reminders, and completion states. Does not
+  include the onboarding content itself (that belongs to the Content domain).
+
+  '
+id: dom_4xkq2m
+meta:
+  created: '2026-05-14'
+  updated: '2026-05-14'
+owner-team: platform-team
+relationships: {}
+status:
+  lifecycle: active
+title: Onboarding
+type: domain

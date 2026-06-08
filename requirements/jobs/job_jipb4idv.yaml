@@ -1,0 +1,23 @@
+domain: dom_hrns4x2k
+id: job_jipb4idv
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  authored-by: harness-maintainers
+  created: '2026-06-01'
+  updated: '2026-06-01'
+narrative: When my product already has documentation, code, and implicit decisions,
+  I need to ingest that existing knowledge into the harness so I get the benefits
+  without throwing away what I've built.
+out-of-scope:
+- Automatically inferring requirements from code without documentation
+- Guaranteeing 100% accuracy from messy documentation
+status:
+  legitimacy: approved
+  lifecycle: active
+success-looks-like: An existing product can be onboarded domain-by-domain with human
+  review at each step, producing approved requirement records that reflect reality
+  rather than aspiration.
+title: Teams with existing products need to bring their current state into the harness
+  without starting from scratch
+type: job

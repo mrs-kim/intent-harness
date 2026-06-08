@@ -1,0 +1,30 @@
+domain: dom_4xkq2m
+id: job_4xkq2m
+meta:
+  approved-by: product-owner
+  approved-date: '2026-05-14'
+  authored-by: spec-agent
+  created: '2026-05-14'
+  updated: '2026-05-14'
+narrative: 'When I''m managing a team, I need to know which members haven''t completed
+  onboarding so that I can follow up appropriately, report status to leadership, and
+  ensure the team is fully operational.
+
+  '
+out-of-scope:
+- Automating follow-up without admin involvement
+- Tracking why a member hasn't completed onboarding
+- Historical trend data over time (revisit if leadership reporting requires it)
+- Onboarding content recommendations based on completion gaps
+relationships:
+  related: []
+status:
+  legitimacy: approved
+  lifecycle: active
+success-looks-like: 'An admin can identify incomplete onboarding without leaving the
+  dashboard, take action on individual members, and produce a status report for leadership
+  without manually copying data.
+
+  '
+title: Team admins need visibility into who hasn't completed onboarding
+type: job

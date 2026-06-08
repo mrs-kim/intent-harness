@@ -1,0 +1,34 @@
+id: dp_8qr3nt
+type: design-principle
+title: Incomplete state feels like momentum, not failure
+domain: dom_4xkq2m
+job: job_4xkq2m
+intent: >
+  When an admin sees team members who haven't completed onboarding, the
+  experience should feel like something is in motion — work underway, not
+  people being judged or failures being reported. The admin is helping,
+  not auditing.
+anti-patterns:
+  - Red error indicators on incomplete rows
+  - Language like "missing", "failed", "incomplete", "overdue"
+  - Empty states that look like error states or system failures
+  - Urgency framing that implies blame (e.g. "X members still haven't...")
+  - Progress bars that emphasize what's missing rather than what's done
+what-good-looks-like: >
+  Progress language rather than deficit language. Encouraging microcopy.
+  Actions that feel like helping rather than correcting. Neutral or warm
+  visual indicators rather than red/warning colors for in-progress states.
+owner-team: design-team
+relationships:
+  informs:
+    - req_cv3p8x
+    - ds_7nq2px
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-05-14"
+  updated: "2026-05-14"
+  authored-by: design-team
+  approved-by: design-lead
+  approved-date: "2026-05-14"

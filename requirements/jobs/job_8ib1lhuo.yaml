@@ -1,0 +1,24 @@
+domain: dom_hrns4x2k
+id: job_8ib1lhuo
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  authored-by: harness-maintainers
+  created: '2026-06-01'
+  updated: '2026-06-01'
+narrative: When people join or leave a team, or when AI generates code and behavior,
+  I need product decisions to remain legible, traceable, and human-approved so that
+  the product stays intentional rather than drifting.
+out-of-scope:
+- Managing product roadmaps or prioritization
+- Replacing human judgment about what to build
+- Enforcing code style or architecture
+status:
+  legitimacy: approved
+  lifecycle: active
+success-looks-like: A new team member can understand what the product does, what it
+  doesn't do, why decisions were made, and what proves the behavior works — without
+  asking anyone.
+title: Product teams need product truth preserved across team changes and AI-assisted
+  development
+type: job

@@ -1,0 +1,20 @@
+domain: dom_hrns4x2k
+id: dec_8ihp5kxx
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  created: '2026-06-01'
+  updated: '2026-06-01'
+outcome: excluded
+rationale: Deleting a requirement record removes traceability history. Code that was
+  traced to a deleted requirement becomes untraced, and the reason for past decisions
+  is lost. Superseded records remain readable for anyone who needs to understand why
+  something changed.
+revisit-when: If the requirements directory grows so large that it meaningfully impacts
+  performance or developer experience, consider an archive mechanism that moves historical
+  records out of the active directory without deleting them.
+status:
+  legitimacy: approved
+  lifecycle: active
+title: Records are never deleted, only superseded
+type: decision

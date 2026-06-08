@@ -1,0 +1,24 @@
+context: 'A single status field (draft → active → deprecated) collapses three independent
+  concerns: has a human approved this, is it currently enforced, and has the code
+  caught up.'
+domain: dom_hrns4x2k
+id: dec_n3b8snd3
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  created: '2026-06-01'
+  updated: '2026-06-01'
+outcome: excluded
+rationale: Collapsing these into one field means the CI gate cannot distinguish a
+  proposed record (should not be enforced) from a historical record (no longer enforced).
+  It also means implementation state changes pollute the approval history. Three fields
+  — legitimacy, lifecycle, implementation — each change for different reasons and
+  are owned by different actors.
+revisit-when: If the three-field model creates confusion in practice or makes the
+  schema harder to understand for new users, consider consolidating legitimacy and
+  lifecycle while keeping implementation separate.
+status:
+  legitimacy: approved
+  lifecycle: active
+title: Status is three independent fields, not one lifecycle field
+type: decision

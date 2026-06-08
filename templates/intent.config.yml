@@ -1,0 +1,73 @@
+# intent.config.yml
+#
+# The one file your team edits to configure this harness for your project.
+# Everything else is standard and should not need to change.
+#
+# After editing, run: intent validate
+# to confirm the configuration is correct.
+
+product:
+  name: "Your Product Name"
+  description: "One sentence describing what this product does."
+
+github:
+  org: "your-github-org"
+  repo: "your-repo-name"
+
+design-system:
+  repo: "your-github-org/design-system"
+  # Version format expected in design-spec records: component-name@x.y.z
+  # The harness uses this repo reference for gap detection and link generation.
+
+teams:
+  # List the teams that own domains in this product.
+  # Ownership lives at the team level, not the individual level.
+  # Add teams here as they form. Remove only when a team is fully dissolved.
+  - name: platform-team
+    github-team: "@your-github-org/platform"
+  - name: design-team
+    github-team: "@your-github-org/design"
+
+agents:
+  # The spec agent runs on issue and PR events.
+  # Requires INTENT_API_KEY in GitHub repo secrets.
+  spec:
+    enabled: true
+    # Maximum questions the spec agent will ask before drafting anyway.
+    max-clarifying-questions: 2
+
+  # The decision agent watches for conflicts and gaps.
+  decision:
+    enabled: true
+    # Label applied to issues the decision agent opens.
+    issue-label: "decision-needed"
+
+  # The trace agent maps code paths to requirement IDs.
+  # Looks for: req: req_xxxxxx in code comments
+  trace:
+    enabled: true
+    # File patterns the trace agent scans. Adjust for your stack.
+    include:
+      - "src/**/*.ts"
+      - "src/**/*.tsx"
+      - "src/**/*.js"
+      - "src/**/*.py"
+      - "app/**/*.rb"
+    exclude:
+      - "**/*.test.*"
+      - "**/*.spec.*"
+      - "**/node_modules/**"
+
+  # The test agent generates acceptance criteria from requirement records.
+  test:
+    enabled: false  # Enable once your test infrastructure is wired up.
+
+enforcement:
+  # The CI gate blocks merge when these conditions are not met.
+  # Start with warn-only: true while the team is onboarding.
+  # Flip to false when the team is ready for hard enforcement.
+  warn-only: true
+
+  # How long an approved+active requirement can remain implementation=unbuilt
+  # before the decision agent flags it. Set to null to disable.
+  unbuilt-warning-days: 30

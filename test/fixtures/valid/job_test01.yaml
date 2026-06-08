@@ -1,0 +1,19 @@
+id: job_test01
+type: job
+title: Test users need to verify the harness works correctly
+domain: dom_test01
+narrative: >
+  When I am running the test suite, I need all checks to pass
+  so that I can be confident the harness is working correctly.
+success-looks-like: All tests pass with zero errors.
+out-of-scope:
+  - Testing real product behavior
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-01-01"
+  updated: "2026-01-01"
+  authored-by: test-suite
+  approved-by: test-suite
+  approved-date: "2026-01-01"

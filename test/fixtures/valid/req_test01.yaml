@@ -1,0 +1,27 @@
+id: req_test01
+type: requirement
+title: Validate script accepts well-formed requirement records
+domain: dom_test01
+job: job_test01
+behavior: >
+  When a requirement record conforms to the JSON Schema,
+  the validate script reports no errors for that record.
+rationale: The harness is only useful if its own validation is trustworthy.
+acceptance-criteria:
+  - given: a requirement record that conforms to the schema
+    when: the validate script runs
+    then: the record passes Gate 1 with no errors
+status:
+  legitimacy: approved
+  lifecycle: active
+  implementation: complete
+traces:
+  - src/validate.js
+tests:
+  - test/validate.test.js
+meta:
+  created: "2026-01-01"
+  updated: "2026-01-01"
+  authored-by: test-suite
+  approved-by: test-suite
+  approved-date: "2026-01-01"

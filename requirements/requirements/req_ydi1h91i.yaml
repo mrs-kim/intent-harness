@@ -1,0 +1,23 @@
+behavior: 'Any record created or modified by an agent is set to legitimacy: proposed.
+  It transitions to legitimacy: approved only when a human merges the PR containing
+  it. The GitHub username of the person who merged is recorded as approved-by on the
+  record.'
+domain: dom_hrns4x2k
+id: req_ydi1h91i
+job: job_8ib1lhuo
+meta:
+  approved-by: harness-maintainers
+  approved-date: '2026-06-01'
+  created: '2026-06-01'
+  updated: '2026-06-01'
+rationale: The accountability guarantee is the core of the harness. Without it, AI-generated
+  product truth is indistinguishable from human-approved product truth.
+status:
+  implementation: complete
+  legitimacy: approved
+  lifecycle: active
+title: Agents draft records, humans approve by merging
+traces:
+- src/flip-legitimacy.js
+- src/agents/spec-agent.js
+type: requirement

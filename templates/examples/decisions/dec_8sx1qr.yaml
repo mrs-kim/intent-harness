@@ -1,0 +1,43 @@
+id: dec_8sx1qr
+type: decision
+title: CSV export does not include historical completion dates
+domain: dom_4xkq2m
+context: >
+  During scoping of req_cv3p8x (CSV export), the question arose whether the
+  export should include the date each member completed onboarding, not just
+  their current status.
+outcome: excluded
+rationale: >
+  Completion timestamps are not stored at the member level in the current
+  data model. Adding timestamp storage is a non-trivial schema change that
+  is out of scope for this feature. Current/incomplete status satisfies the
+  immediate leadership reporting need.
+alternatives-considered:
+  - option: Add completion timestamps to the data model as part of this work
+    reason-rejected: >
+      Scope creep. Timestamp storage requires migration, backfill strategy
+      for existing members, and additional test coverage. The core export
+      value does not depend on it.
+  - option: Derive an approximate date from audit logs
+    reason-rejected: >
+      Audit logs are not guaranteed to be complete for all historical events.
+      Approximate dates in a leadership report create more confusion than
+      omitting the field entirely.
+revisit-when: >
+  If leadership reporting explicitly requires trend data over time, or if
+  the data model is updated to store completion timestamps for another reason.
+owner: platform-team
+relationships:
+  resolves:
+    - req_cv3p8x
+  constrains:
+    - req_cv3p8x
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-05-14"
+  updated: "2026-05-14"
+  authored-by: spec-agent
+  approved-by: product-owner
+  approved-date: "2026-05-14"

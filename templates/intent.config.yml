@@ -30,7 +30,7 @@ teams:
 
 agents:
   # The spec agent runs on issue and PR events.
-  # Requires INTENT_API_KEY in GitHub repo secrets.
+  # Requires INTENT_HARNESS_KEY in GitHub repo secrets.
   spec:
     enabled: true
     # Maximum questions the spec agent will ask before drafting anyway.

@@ -97,8 +97,8 @@ Add three secrets to your GitHub repo (Settings → Secrets → Actions):
 
 | Secret | Purpose |
 |---|---|
-| `INTENT_API_KEY` | Anthropic API key — powers all agent calls |
-| `INTENT_BOT_TOKEN` | GitHub personal access token (repo scope) — for agent commits and PRs |
+| `INTENT_HARNESS_KEY` | Anthropic API key — powers all agent calls |
+| `INTENT_HARNESS_TOKEN` | GitHub personal access token (repo scope) — for agent commits and PRs |
 | `FIGMA_ACCESS_TOKEN` | Optional — enables automatic Figma frame metadata |
 
 Push the scaffolded files. The agents and CI workflows go live immediately.

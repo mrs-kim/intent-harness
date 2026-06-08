@@ -1,0 +1,27 @@
+id: req_5v8b96h9
+type: requirement
+domain: dom_hrns4x2k
+job: job_8ib1lhuo
+title: Review page provides rich filtering across multiple dimensions
+behavior: >-
+  The intent review page includes filters for: record type (job, requirement,
+  decision, design-principle), legitimacy status (proposed, approved,
+  superseded), domain, ingestion confidence (high, medium, low),
+  implementation status (unbuilt, in-progress, complete), and lifecycle
+  (active, deprecated). Filters can be combined. The active filter state
+  is visible at all times.
+rationale: >-
+  A project with hundreds of records needs multiple ways to slice the view.
+  Which filters are actually useful will emerge from use — start broad and
+  prune later.
+status:
+  legitimacy: approved
+  lifecycle: active
+  implementation: unbuilt
+traces:
+  - src/review.js
+meta:
+  created: "2026-06-08"
+  updated: "2026-06-08"
+  approved-by: mrs-kim
+  approved-date: "2026-06-08"

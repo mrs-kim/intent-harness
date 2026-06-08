@@ -1,0 +1,26 @@
+id: req_qtniufya
+type: requirement
+domain: dom_hrns4x2k
+job: job_8ib1lhuo
+title: Review page lets users approve and edit proposed records from the browser
+behavior: >-
+  The intent review page renders each proposed record with an Approve button and
+  editable fields for all fields except id. Clicking Approve writes
+  legitimacy: approved to the record's YAML file on disk. The card visually
+  confirms the approval in the current session and is absent the next time
+  intent review is run.
+rationale: >-
+  After intent ingest produces dozens of proposed records, editing YAML files
+  manually one by one is the main workflow bottleneck. Browser-based approval
+  and editing removes that friction.
+status:
+  legitimacy: approved
+  lifecycle: active
+  implementation: unbuilt
+traces:
+  - src/review.js
+meta:
+  created: "2026-06-08"
+  updated: "2026-06-08"
+  approved-by: mrs-kim
+  approved-date: "2026-06-08"

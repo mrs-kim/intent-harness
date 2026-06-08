@@ -129,7 +129,10 @@
         "authored-by": { "type": "string" },
         "approved-by": { "type": "string" },
         "approved-date": { "type": "string", "format": "date" },
-        "github-issue": { "type": "integer" }
+        "github-issue": { "type": "integer" },
+        "ingestion-confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "ingestion-source": { "type": "string" },
+        "ingestion-note": { "type": "string" }
       }
     }
   }

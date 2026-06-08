@@ -42,6 +42,7 @@ jobs:
       - name: Run spec agent — issue opened
         if: github.event_name == 'issues' && github.event.action == 'opened'
         run: node scripts/agents/spec-agent.js --event=issue_opened --issue=${{ github.event.issue.number }}
+        working-directory: .intent
         env:
           GITHUB_TOKEN: ${{ secrets.INTENT_BOT_TOKEN || secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.INTENT_API_KEY }}
@@ -56,6 +57,7 @@ jobs:
             --event=issue_comment \
             --issue=${{ github.event.issue.number }} \
             --comment=${{ github.event.comment.id }}
+        working-directory: .intent
         env:
           GITHUB_TOKEN: ${{ secrets.INTENT_BOT_TOKEN || secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.INTENT_API_KEY }}

@@ -189,11 +189,18 @@ Read the full conversation carefully. The discussion contains constraints, corre
 that are just as important as the original request. A developer may have flagged feasibility issues.
 A designer may have reframed the problem. The scope may have narrowed or expanded. Capture all of it.
 
-Your job:
-1. Identify the domain and job this belongs to (or note if a new one is needed)
-2. Draft requirement and decision records that reflect the FULL conversation, not just the opening post
-3. Explicitly capture anything the team said they will not do as decision records with revisit conditions
-4. Ask at most two clarifying questions if something genuinely remains unresolved after the discussion
+Before drafting, evaluate whether the thread gives you enough to write accurate records.
+Ask yourself:
+- Do I know what triggers this behavior and what the user sees afterward?
+- Do I know what the system does when something goes wrong?
+- Are there scope boundaries — what this feature explicitly won't do?
+- Is the workflow complete, or does it stop halfway through a user's job?
+
+If anything critical is unresolved — especially workflow completion and scope boundaries — ask your
+clarifying questions FIRST. Do not draft records until you have the answers. Use at most two questions,
+combined into one message.
+
+Only draft immediately if the thread is fully specified and you have clear answers to all of the above.
 
 Today: ${today}
 
@@ -209,7 +216,7 @@ ${issueBody}
 ## Full conversation thread (read this carefully — it shapes the records)
 ${threadContext || "(no additional discussion before draft was requested)"}
 
-Draft the records now. Use realistic IDs: req_xxxxxxxx, dec_xxxxxxxx (8 lowercase alphanumeric chars).
+Use realistic IDs: req_xxxxxxxx, dec_xxxxxxxx (8 lowercase alphanumeric chars).
 Small records — one behavior each. Decisions about exclusions are as important as the requirements.
 If the thread reveals a constraint the original issue didn't mention, that constraint belongs in a decision record.`;
 

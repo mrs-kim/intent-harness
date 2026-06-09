@@ -82,6 +82,27 @@ function renderField(label, value, fieldKey, recordId, multiline = false) {
     </div>`;
 }
 
+function renderDomainField(record, graph) {
+  const currentId = record.domain || "";
+  const currentDomain = currentId ? graph.get(currentId) : null;
+  const currentTitle = currentDomain ? currentDomain.title : (currentId || "—");
+  const domains = graph.all("domain").filter(d => d.status?.lifecycle === "active");
+  const options = domains.map(d =>
+    `<option value="${d.id}"${d.id === currentId ? " selected" : ""}>${escape(d.title)}</option>`
+  ).join("");
+  return `
+    <div class="field">
+      <span class="label">Domain</span>
+      <div class="field-edit-wrap">
+        <span class="field-value">${escape(currentTitle)}</span>
+        <select class="field-input domain-select" data-field="domain" data-id="${record.id}">
+          ${options}
+          <option value="__new__">+ New domain…</option>
+        </select>
+      </div>
+    </div>`;
+}
+
 function renderRecord(record, filePath, graph) {
   const confidence = record.meta?.["ingestion-confidence"];
   const note = record.meta?.["ingestion-note"];
@@ -93,6 +114,7 @@ function renderRecord(record, filePath, graph) {
   const borderColor = legitimacy === "approved" ? "#2da44e" : confidence === "low" ? "#cf222e" : "#d0d7de";
 
   let fields = "";
+  fields += renderDomainField(record, graph);
   if (record.type === "job") {
     fields += renderField("Narrative", record.narrative, "narrative", record.id, true);
     fields += renderField("Success looks like", record["success-looks-like"], "success-looks-like", record.id, true);
@@ -519,6 +541,63 @@ function generatePage(graph, args) {
     }
   });
 
+  // Domain dropdown: auto-save on change, or show new domain form
+  document.addEventListener('change', async e => {
+    if (!e.target.classList.contains('domain-select')) return;
+    const select = e.target;
+    const card = select.closest('.record');
+    const id = select.dataset.id;
+    const file = card.querySelector('.btn-save')?.dataset.file;
+    if (!file) return;
+
+    if (select.value === '__new__') {
+      const title = prompt('New domain name:');
+      if (!title) { select.value = select.dataset.prev || ''; return; }
+      const description = prompt('One-line description:') || '';
+      try {
+        const res = await fetch('/api/domain/create', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ title, description })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const domain = await res.json();
+        // Add to all domain selects on the page
+        document.querySelectorAll('.domain-select').forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = domain.id; opt.textContent = title;
+          s.insertBefore(opt, s.querySelector('option[value="__new__"]'));
+        });
+        select.value = domain.id;
+        showToast('Domain created: ' + title);
+      } catch (err) {
+        showToast('Error: ' + err.message, true);
+        select.value = select.dataset.prev || '';
+        return;
+      }
+    }
+
+    select.dataset.prev = select.value;
+    const displayEl = select.closest('.field-edit-wrap')?.querySelector('.field-value');
+    if (displayEl) displayEl.textContent = select.options[select.selectedIndex].text;
+
+    try {
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id, file, fields: { domain: select.value } })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      card.dataset.domain = select.value;
+      showToast('Domain updated');
+    } catch (err) {
+      showToast('Error: ' + err.message, true);
+    }
+  });
+
+  // Store initial domain value for cancel support
+  document.querySelectorAll('.domain-select').forEach(s => { s.dataset.prev = s.value; });
+
   // Add edit/cancel buttons to each record
   document.querySelectorAll('.record').forEach(card => {
     const actions = card.querySelector('.record-actions');
@@ -859,6 +938,32 @@ function startServer(graph, args, port) {
       if (!job) { res.writeHead(404); res.end(); return; }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ output: job.output, done: job.done, error: job.error }));
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/api/domain/create") {
+      let body = "";
+      req.on("data", chunk => (body += chunk));
+      req.on("end", () => {
+        try {
+          const { title, description } = JSON.parse(body);
+          if (!title) { res.writeHead(400); res.end("title required"); return; }
+          const id = "dom_" + Math.random().toString(36).slice(2, 10);
+          const record = {
+            id, type: "domain", title, description: description || "",
+            status: { legitimacy: "proposed", lifecycle: "active" },
+            meta: { created: new Date().toISOString().split("T")[0] },
+          };
+          const dir = path.join(REQUIREMENTS_DIR, "domains");
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(path.join(dir, `${id}.yaml`), yaml.dump(record, { lineWidth: 120 }), "utf8");
+          console.log(`  ✓ Created domain: ${title} (${id})`);
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ id, title, description: description || "" }));
+        } catch (err) {
+          res.writeHead(500); res.end(err.message);
+        }
+      });
       return;
     }
 

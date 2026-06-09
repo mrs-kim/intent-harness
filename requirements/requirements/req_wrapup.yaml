@@ -1,0 +1,21 @@
+id: req_wrapup
+type: requirement
+title: wrap-up blocks session close if no requirement files were updated
+domain: dom_hrns4x2k
+behavior: >
+  Running `intent wrap-up` checks whether any files under requirements/ were
+  committed or staged since the session's start SHA. If none were touched, it
+  prompts for a skip reason. If the user leaves the reason blank, it exits
+  without closing the session, directing them to update requirements first.
+  If a reason is provided, the session closes. On successful close,
+  .intent/session.json is deleted.
+rationale: >
+  Requiring a requirement update (or an explicit skip reason) closes the loop
+  between code changes and the record of intent. Without this gate, requirement
+  records drift from the actual behavior over time.
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-06-08"
+  github-issue: 14

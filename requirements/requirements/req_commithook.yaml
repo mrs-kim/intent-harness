@@ -1,0 +1,21 @@
+id: req_commithook
+type: requirement
+title: commit-msg hook blocks commits that do not reference the active session issue
+domain: dom_hrns4x2k
+behavior: >
+  When .intent/session.json exists and contains an issue number, the
+  commit-msg git hook rejects any commit whose message does not contain
+  #<issue-number>. The rejection message names the issue and the session
+  description. If no session is active the hook exits without blocking.
+  The hook is installed by `intent install-hooks` and automatically by
+  `intent start-work` and `intent init`.
+rationale: >
+  Enforcement at the git level means the workflow cannot be skipped by
+  forgetting. Text reminders are not enforcement; a hook that rejects the
+  commit is.
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-06-08"
+  github-issue: 14

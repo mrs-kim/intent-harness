@@ -1,0 +1,21 @@
+id: req_startwork
+type: requirement
+title: start-work creates a GitHub issue, branch, and session file before any code changes
+domain: dom_hrns4x2k
+behavior: >
+  Running `intent start-work <description>` creates a GitHub issue with the
+  description as the title, creates and checks out a branch named
+  work/<issue>-<slug>, and writes .intent/session.json recording the issue
+  number, branch, description, start date, and HEAD SHA at that moment.
+  If a session is already active it exits with an error. If the commit-msg
+  hook is not yet installed it installs it automatically.
+rationale: >
+  Making issue creation a precondition of work — not an afterthought — ensures
+  every change is traceable. The HEAD SHA snapshot lets wrap-up diff exactly
+  what changed during the session.
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-06-08"
+  github-issue: 14

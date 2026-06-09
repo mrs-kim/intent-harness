@@ -307,7 +307,8 @@ function generatePage(graph, args) {
     .field.warn { background: #fff8c5; padding: 5px 7px; border-radius: 4px; margin-top: 6px; }
     .label { color: #656d76; min-width: 110px; flex-shrink: 0; font-weight: 500; padding-top: 3px; }
     .field-edit-wrap { flex: 1; }
-    .field-value { color: #1f2328; line-height: 1.5; display: block; }
+    .field-value { color: #1f2328; line-height: 1.5; display: block; border-radius: 3px; }
+    .field-value:not(.ref):not(.source):hover { background: #f0f4f8; cursor: text; }
     .field-value.ref { color: #0969da; }
     .field-value.source { color: #656d76; font-style: italic; font-size: 11px; }
     .field-input { display: none; width: 100%; padding: 4px 6px; border: 1px solid #0969da; border-radius: 4px; font-size: 12px; font-family: inherit; resize: vertical; }
@@ -315,7 +316,7 @@ function generatePage(graph, args) {
     .record.editing .field-input { display: block; }
 
     .record-actions { margin-top: 10px; display: flex; gap: 6px; }
-    .btn-approve { padding: 4px 12px; background: #2da44e; color: white; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-approve { padding: 4px 12px; background: #2da44e; color: white; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; margin-left: auto; }
     .btn-approve:hover { background: #218a3c; }
     .btn-save { padding: 4px 12px; background: #0969da; color: white; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; }
     .btn-save:hover { background: #0550a8; }
@@ -610,9 +611,10 @@ function generatePage(graph, args) {
     cancelBtn.className = 'btn-cancel';
     cancelBtn.textContent = 'Cancel';
     cancelBtn.style.display = 'none';
-    actions.appendChild(editBtn);
-    actions.appendChild(cancelBtn);
-    if (saveBtn) saveBtn.after(cancelBtn);
+    actions.prepend(cancelBtn);
+    actions.prepend(saveBtn || cancelBtn);
+    actions.prepend(editBtn);
+    if (saveBtn) editBtn.after(saveBtn);
   });
 </script>
 </body>

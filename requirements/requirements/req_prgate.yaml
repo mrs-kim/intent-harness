@@ -1,0 +1,21 @@
+id: req_prgate
+type: requirement
+title: PR gate blocks merge when src changes without requirements changes
+domain: dom_hrns4x2k
+behavior: >
+  The requirement-gate GitHub Actions workflow includes a job that checks
+  every PR for changed files. If any file under src/ was modified and no
+  file under requirements/ was modified, the job fails and blocks merge.
+  The check is bypassed if the PR carries a skip-req-gate label, which
+  requires a documented reason in the PR description.
+rationale: >
+  The local wrap-up command enforces requirements updates at session close,
+  but has no effect on PRs opened without going through start-work. The PR
+  gate closes this loop on the GitHub side, ensuring code and requirements
+  stay in sync regardless of how the PR was created.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-08"
+  github-issue: 15

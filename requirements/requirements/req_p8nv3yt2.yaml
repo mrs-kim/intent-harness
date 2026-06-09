@@ -1,0 +1,20 @@
+id: req_p8nv3yt2
+type: requirement
+title: Ingest agent avoids duplicating both approved and proposed records when extracting
+domain: dom_intentharness
+behavior: >
+  When building the existing records context passed to each extraction chunk, the agent
+  includes both approved and proposed records. Approved records are labeled as verified;
+  proposed records are labeled as unreviewed. Claude is instructed not to re-extract
+  approved records, and to avoid duplicating proposed ones unless there is a meaningful
+  distinction.
+rationale: >
+  In early-stage projects, records are proposed but not yet approved. Excluding proposed
+  records from the duplicate check causes every re-ingest to produce near-identical
+  duplicate proposals, creating review burden.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-09"
+  github-issue: 9

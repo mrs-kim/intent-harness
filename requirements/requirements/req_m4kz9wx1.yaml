@@ -1,0 +1,20 @@
+id: req_m4kz9wx1
+type: requirement
+title: Ingest agent reuses existing domains when ingesting new documents into an established project
+domain: dom_intentharness
+behavior: >
+  When the project graph already contains domain records, the ingest agent passes
+  those domains to the domain identification step. Claude is instructed to map new
+  content into existing domains where appropriate, and only propose a new domain
+  when the content clearly does not fit any established one. The output labels each
+  proposed domain as [existing] or [new].
+rationale: >
+  Without awareness of existing domains, each ingest treats the project as empty and
+  proposes a fresh domain structure. This causes domain fragmentation and duplicate
+  records across ingestion runs.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-09"
+  github-issue: 8

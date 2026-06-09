@@ -556,16 +556,29 @@ async function main() {
   } else {
     const summary = summarizeForDomainId(documents);
 
+    const existingDomains = [...graph.records.values()]
+      .filter(r => r.type === "domain")
+      .map(r => ({ title: r.record.title, description: r.record.description }));
+
+    if (existingDomains.length) {
+      console.log(`  ${existingDomains.length} existing domain(s): ${existingDomains.map(d => d.title).join(", ")}`);
+    }
+
     process.stdout.write("  Analyzing documentation... ");
-    domains = await identifyDomains(summary);
+    domains = await identifyDomains(summary, existingDomains);
     console.log(`✓ ${domains.length} domains identified`);
+
+    const existingTitles = new Set(existingDomains.map(d => d.title.toLowerCase()));
+    console.log("\n  Domains:");
+    domains.forEach((d) => {
+      const tag = existingTitles.has(d.title.toLowerCase()) ? "[existing]" : "[new]";
+      console.log(`    ${tag} ${d.title}: ${d.description}`);
+    });
 
     // Interactive review (skip if not a TTY or dry-run)
     if (process.stdin.isTTY && !args.flags.dryRun) {
       domains = await reviewDomains(domains);
     } else {
-      console.log("\n  Proposed domains:");
-      domains.forEach((d) => console.log(`    - ${d.title}: ${d.description}`));
       console.log("\n  (Non-interactive mode — proceeding without confirmation)");
     }
   }

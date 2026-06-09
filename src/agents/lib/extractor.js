@@ -214,10 +214,14 @@ Respond ONLY with JSON in the same format as the input. No preamble. No markdown
  * @param {string} documentSummary - Combined text from all documents
  * @returns {Promise<Array<{ title, description, signals }>>}
  */
-async function identifyDomains(documentSummary) {
+async function identifyDomains(documentSummary, existingDomains = []) {
+  const existingContext = existingDomains.length
+    ? `## Existing domains already established in this project\nReuse these where the content fits. Only propose a new domain if the content clearly doesn't belong to any of these.\n${existingDomains.map(d => `- ${d.title}: ${d.description}`).join("\n")}\n\n`
+    : "";
+
   const response = await callClaude(
     DOMAIN_SYSTEM,
-    `Analyze this product documentation and identify the domains:\n\n${documentSummary}`,
+    `${existingContext}Analyze this product documentation and identify the domains:\n\n${documentSummary}`,
     1000
   );
 

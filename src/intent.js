@@ -17,6 +17,15 @@ const path = require("path");
 const readline = require("readline");
 const { execSync } = require("child_process");
 
+// Auto-load .env from cwd
+const dotenvPath = path.join(process.cwd(), ".env");
+if (fs.existsSync(dotenvPath)) {
+  fs.readFileSync(dotenvPath, "utf8").split("\n").forEach(line => {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, "");
+  });
+}
+
 const HARNESS_VERSION = "0.4.0";
 
 // ─── Utils ───────────────────────────────────────────────────────────────────

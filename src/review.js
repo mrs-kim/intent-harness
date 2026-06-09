@@ -17,12 +17,21 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-const { execSync } = require("child_process");
+const { execSync, spawn } = require("child_process");
 const yaml = require("js-yaml");
 const { Graph } = require("./agents/lib/graph");
 
 const INTENT_ROOT = process.env.INTENT_ROOT || process.cwd();
 const REQUIREMENTS_DIR = path.join(INTENT_ROOT, "requirements");
+
+// Load .env from project root if present
+const dotenvPath = path.join(INTENT_ROOT, ".env");
+if (fs.existsSync(dotenvPath)) {
+  fs.readFileSync(dotenvPath, "utf8").split("\n").forEach(line => {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, "");
+  });
+}
 
 function parseArgs() {
   const args = {};
@@ -306,7 +315,13 @@ function generatePage(graph, args) {
     <h1>Intent Review — ${title}</h1>
     <div class="subtitle" id="subtitle">${allRecords.length} records · ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>
   </div>
-  <span class="approved-count" id="approvedCount"></span>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span class="approved-count" id="approvedCount"></span>
+    <nav style="display:flex;gap:4px">
+      <a href="/ingest" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:500;color:#8b949e;text-decoration:none">Ingest</a>
+      <a href="/" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:500;color:white;background:rgba(255,255,255,.15);text-decoration:none">Review</a>
+    </nav>
+  </div>
 </div>
 
 <div class="filter-bar">
@@ -525,6 +540,211 @@ function generatePage(graph, args) {
 </html>`;
 }
 
+// ─── Ingest page ─────────────────────────────────────────────────────────────
+
+function generateIngestPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intent — Ingest</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; color: #1f2328; background: #f6f8fa; }
+
+    .header { background: #24292f; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .header h1 { font-size: 15px; font-weight: 600; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .nav-tab { padding: 5px 14px; border-radius: 5px; font-size: 12px; font-weight: 500; color: #8b949e; text-decoration: none; }
+    .nav-tab:hover { color: white; background: rgba(255,255,255,.1); }
+    .nav-tab.active { color: white; background: rgba(255,255,255,.15); }
+
+    .main { max-width: 700px; margin: 40px auto; padding: 0 24px; }
+    h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .desc { font-size: 13px; color: #656d76; margin-bottom: 24px; }
+
+    .form-section { background: white; border: 1px solid #d0d7de; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+    .form-label { font-size: 12px; font-weight: 600; color: #1f2328; display: block; margin-bottom: 6px; }
+    .form-hint { font-size: 11px; color: #656d76; margin-bottom: 8px; }
+    input[type="text"], textarea { width: 100%; padding: 8px 10px; border: 1px solid #d0d7de; border-radius: 6px; font-size: 13px; font-family: inherit; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,.1); }
+    textarea { resize: vertical; min-height: 120px; }
+    .or-divider { text-align: center; color: #656d76; font-size: 12px; margin: 12px 0; }
+
+    .options { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .option-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #656d76; }
+    input[type="checkbox"] { width: 14px; height: 14px; }
+
+    .btn-run { margin-top: 20px; padding: 8px 20px; background: #0969da; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-run:hover { background: #0550a8; }
+    .btn-run:disabled { background: #8c959f; cursor: not-allowed; }
+
+    .output-section { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-top: 20px; display: none; }
+    .output-section.visible { display: block; }
+    .output-log { font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; color: #c9d1d9; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; }
+    .output-status { font-size: 12px; color: #8b949e; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .spinner { width: 12px; height: 12px; border: 2px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .done-bar { margin-top: 14px; padding-top: 14px; border-top: 1px solid #30363d; display: none; }
+    .done-bar.visible { display: flex; gap: 10px; align-items: center; }
+    .btn-review { padding: 6px 16px; background: #2da44e; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+    .done-msg { font-size: 12px; color: #8b949e; }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>Intent Harness</h1>
+  <nav class="nav-tabs">
+    <a class="nav-tab active" href="/ingest">Ingest</a>
+    <a class="nav-tab" href="/">Review</a>
+  </nav>
+</div>
+
+<div class="main">
+  <h2>Ingest documentation</h2>
+  <p class="desc">Point the agent at existing docs and it will extract requirement records for your review. Records are written locally — nothing is approved until you review and merge.</p>
+
+  <div class="form-section">
+    <label class="form-label">File path or URL</label>
+    <p class="form-hint">Path to a file, directory, or URL. Comma-separate multiple sources.</p>
+    <input type="text" id="fromInput" placeholder="./docs/spec.md  or  https://notion.so/your-page">
+
+    <div class="or-divider">— or paste content directly —</div>
+
+    <label class="form-label">Paste text</label>
+    <p class="form-hint">Paste a spec, PRD, meeting notes, or any documentation.</p>
+    <textarea id="pasteInput" placeholder="Paste your documentation here…"></textarea>
+
+    <div class="options">
+      <label class="option-check">
+        <input type="checkbox" id="noPrCheck" checked>
+        Write files locally (no PR)
+      </label>
+      <label class="option-check">
+        <input type="checkbox" id="dryRunCheck">
+        Dry run (don't write files)
+      </label>
+    </div>
+
+    <button class="btn-run" id="runBtn" onclick="runIngest()">Run ingest</button>
+  </div>
+
+  <div class="output-section" id="outputSection">
+    <div class="output-status" id="outputStatus">
+      <div class="spinner" id="spinner"></div>
+      <span id="statusText">Running…</span>
+    </div>
+    <div class="output-log" id="outputLog"></div>
+    <div class="done-bar" id="doneBar">
+      <a class="btn-review" href="/">Go to Review →</a>
+      <span class="done-msg" id="doneMsg"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.addEventListener('load', async () => {
+    const { id, running } = await fetch('/api/ingest-active').then(r => r.json());
+    if (running) {
+      document.getElementById('outputSection').classList.add('visible');
+      document.getElementById('statusText').textContent = 'Running… (reconnected)';
+      document.getElementById('runBtn').disabled = true;
+      document.getElementById('runBtn').textContent = 'Running…';
+      startPolling(id, false);
+    }
+  });
+
+  function startPolling(jobId, dryRun) {
+    let offset = 0;
+    const outputLog = document.getElementById('outputLog');
+    const spinner = document.getElementById('spinner');
+    const statusText = document.getElementById('statusText');
+    const doneBar = document.getElementById('doneBar');
+    const doneMsg = document.getElementById('doneMsg');
+    const btn = document.getElementById('runBtn');
+
+    const poll = setInterval(async () => {
+      try {
+        const { output, done, error } = await fetch('/api/ingest-status?id=' + jobId).then(r => r.json());
+        if (output.length > offset) {
+          outputLog.textContent += output.slice(offset);
+          offset = output.length;
+          outputLog.scrollTop = outputLog.scrollHeight;
+        }
+        if (done) {
+          clearInterval(poll);
+          spinner.style.display = 'none';
+          statusText.textContent = error ? 'Failed' : 'Done';
+          doneBar.classList.add('visible');
+          doneMsg.textContent = error || (dryRun ? 'Dry run complete.' : 'Records written. Go to Review to approve them.');
+          btn.disabled = false; btn.textContent = 'Run ingest';
+        }
+      } catch (e) {
+        clearInterval(poll);
+        outputLog.textContent += '\\nPoll error: ' + e.message;
+        spinner.style.display = 'none';
+        btn.disabled = false; btn.textContent = 'Run ingest';
+      }
+    }, 800);
+  }
+
+  async function runIngest() {
+    const fromVal = document.getElementById('fromInput').value.trim();
+    const pasteVal = document.getElementById('pasteInput').value.trim();
+    const noPr = document.getElementById('noPrCheck').checked;
+    const dryRun = document.getElementById('dryRunCheck').checked;
+
+    if (!fromVal && !pasteVal) {
+      alert('Please provide a file path or paste some content.');
+      return;
+    }
+
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    btn.textContent = 'Running…';
+
+    const outputSection = document.getElementById('outputSection');
+    const outputLog = document.getElementById('outputLog');
+    const statusText = document.getElementById('statusText');
+    const spinner = document.getElementById('spinner');
+    const doneBar = document.getElementById('doneBar');
+    const doneMsg = document.getElementById('doneMsg');
+
+    outputSection.classList.add('visible');
+    outputLog.textContent = '';
+    doneBar.classList.remove('visible');
+    spinner.style.display = '';
+    statusText.textContent = 'Running…';
+
+    let jobId;
+    try {
+      const res = await fetch('/api/ingest', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ from: fromVal, paste: pasteVal, noPr, dryRun })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      jobId = data.id;
+    } catch (err) {
+      outputLog.textContent = 'Error: ' + err.message;
+      statusText.textContent = 'Failed';
+      spinner.style.display = 'none';
+      btn.disabled = false; btn.textContent = 'Run ingest';
+      return;
+    }
+
+    startPolling(jobId, dryRun);
+
+    btn.disabled = false;
+    btn.textContent = 'Run ingest';
+  }
+</script>
+</body>
+</html>`;
+}
+
 // ─── YAML write helpers ───────────────────────────────────────────────────────
 
 function approveRecord(filePath) {
@@ -558,11 +778,94 @@ const TYPE_DIRS = {
 
 function startServer(graph, args, port) {
   const html = generatePage(graph, args);
+  const ingestHtml = generateIngestPage();
+  const agentScript = path.join(__dirname, "agents", "ingest-agent.js");
+  const jobs = new Map(); // id -> { output, done, error }
+  let activeJobId = null;
 
   const server = http.createServer((req, res) => {
     if (req.method === "GET" && req.url === "/") {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       res.end(html);
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/ingest") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(ingestHtml);
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/api/ingest") {
+      let body = "";
+      req.on("data", chunk => (body += chunk));
+      req.on("end", () => {
+        try {
+          const { from, paste, noPr, dryRun } = JSON.parse(body);
+
+          let sources = from || "";
+          let tempFile = null;
+          if (paste && paste.trim()) {
+            tempFile = path.join(INTENT_ROOT, ".intent", "_ingest_paste.txt");
+            fs.writeFileSync(tempFile, paste, "utf8");
+            sources = sources ? `${sources},${tempFile}` : tempFile;
+          }
+
+          if (!sources) {
+            res.writeHead(400); res.end(JSON.stringify({ error: "No source provided" })); return;
+          }
+
+          if (activeJobId && !jobs.get(activeJobId)?.done) {
+            res.writeHead(409); res.end(JSON.stringify({ error: "An ingest is already running" })); return;
+          }
+
+          const id = Math.random().toString(36).slice(2);
+          activeJobId = id;
+          const job = { output: "", done: false, error: null };
+          jobs.set(id, job);
+
+          const nodeArgs = [`--from=${sources}`];
+          if (noPr) nodeArgs.push("--no-pr");
+          if (dryRun) nodeArgs.push("--dry-run");
+
+          console.log(`  Ingest [${id}]: ${nodeArgs.join(" ")}`);
+
+          const child = spawn("node", [agentScript, ...nodeArgs], {
+            env: { ...process.env, INTENT_ROOT, FORCE_COLOR: "0" },
+            cwd: INTENT_ROOT,
+          });
+
+          child.stdout.on("data", d => { job.output += d.toString(); });
+          child.stderr.on("data", d => { job.output += d.toString(); });
+          child.on("close", (code, signal) => {
+            if (tempFile && fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+            job.done = true;
+            job.error = code !== 0 ? `Exit ${code ?? "null"} signal ${signal ?? "none"}` : null;
+            console.log(`  Ingest [${id}] done. code=${code}`);
+          });
+
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ id }));
+        } catch (err) {
+          res.writeHead(500); res.end(err.message);
+        }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && req.url.startsWith("/api/ingest-status")) {
+      const id = req.url.split("id=")[1];
+      const job = jobs.get(id);
+      if (!job) { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ output: job.output, done: job.done, error: job.error }));
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/api/ingest-active") {
+      const job = activeJobId ? jobs.get(activeJobId) : null;
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ id: activeJobId, running: !!(job && !job.done) }));
       return;
     }
 

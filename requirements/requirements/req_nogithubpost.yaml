@@ -1,18 +1,20 @@
 id: req_nogithubpost
 type: requirement
-title: Agent never posts to GitHub without explicit user confirmation
+title: Agent never writes in the user's voice on GitHub without the user dictating it
 domain: dom_hrns4x2k
 behavior: >
-  The harness agent and CLI never post comments, open issues, create PRs,
-  or take any action that writes to GitHub on the user's behalf without
-  the user explicitly requesting that specific action in the same session.
-  Confirmation from a previous session or a general "go ahead" does not
-  authorize future GitHub writes.
+  The harness agent may create issues, open PRs, and take GitHub actions when
+  explicitly requested by the user in the current session. It must never write
+  content that reads as the user's own words — first-person comments, conversational
+  replies, or anything a reader would interpret as the user speaking — unless the
+  user dictated that specific text. The distinction is between taking an action
+  the user asked for versus impersonating the user's voice.
 rationale: >
-  GitHub actions appear under the user's identity and are visible to others.
-  Acting without confirmation is impersonation — the user did not say those
-  words and cannot unsay them. Trust requires that the agent only speaks
-  when spoken through.
+  Writing a comment "as the user" puts words in their mouth that they never said,
+  permanently and publicly. A user asking "make an issue" is authorizing a structured
+  action; they are not authorizing the agent to speak as them. The agent has no
+  identity of its own on GitHub until a bot account exists, but that is not a license
+  to borrow the user's voice.
 status:
   legitimacy: approved
   lifecycle: active

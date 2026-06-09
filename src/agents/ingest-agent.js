@@ -382,18 +382,15 @@ async function openDomainPR(domainTitle, files, summary, domainId) {
 async function processDomain(domain, documents, graph, domainId, flags) {
   console.log(`\n── Extracting: ${domain.title} ─────────────────────────────\n`);
 
-  // Get existing approved records for this domain (don't re-extract)
-  const existingApproved = graph.all("requirement").filter(
-    (r) =>
-      r.domain === domainId &&
-      r.status?.legitimacy === "approved" &&
-      r.status?.lifecycle === "active"
-  );
+  // Get existing records for this domain to avoid re-extracting or duplicating
+  const allForDomain = (type) => graph.all(type).filter((r) => r.domain === domainId);
+  const approved = allForDomain("requirement").filter((r) => r.status?.legitimacy === "approved");
+  const proposed = allForDomain("requirement").filter((r) => r.status?.legitimacy === "proposed");
 
-  const existingGraphSummary =
-    existingApproved.length > 0
-      ? `Existing approved requirements:\n${existingApproved.map((r) => `- ${r.title}`).join("\n")}`
-      : "";
+  const parts = [];
+  if (approved.length) parts.push(`Approved records (do not re-extract):\n${approved.map((r) => `- ${r.title}`).join("\n")}`);
+  if (proposed.length) parts.push(`Proposed records (avoid duplicating unless there is meaningful distinction):\n${proposed.map((r) => `- ${r.title}`).join("\n")}`);
+  const existingGraphSummary = parts.join("\n\n");
 
   // Extract from each document's chunks
   const allExtractions = [];

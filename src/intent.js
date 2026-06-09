@@ -289,9 +289,12 @@ function installHooks() {
 // ─── start-work command ───────────────────────────────────────────────────────
 
 function startWork() {
-  const description = process.argv.slice(3).join(" ").trim();
+  const rawArgs = process.argv.slice(3);
+  const bodyArg = rawArgs.find(a => a.startsWith("--body="));
+  const body = bodyArg ? bodyArg.slice(7) : "";
+  const description = rawArgs.filter(a => !a.startsWith("--")).join(" ").trim();
   if (!description) {
-    console.error("\nUsage: intent start-work <description>\n");
+    console.error("\nUsage: intent start-work <description> [--body=<text>]\n");
     process.exit(1);
   }
 
@@ -323,7 +326,7 @@ function startWork() {
   let issueUrl = null;
   try {
     issueUrl = execSync(
-      `gh issue create --title ${JSON.stringify(description)} --body ""`,
+      `gh issue create --title ${JSON.stringify(description)} --body ${JSON.stringify(body)}`,
       { cwd, encoding: "utf8" }
     ).trim();
     issueNumber = parseInt(issueUrl.split("/").pop());

@@ -1,0 +1,20 @@
+id: dp_useragency
+type: design-principle
+title: The agent acts, never speaks for the user
+domain: dom_hrns4x2k
+intent: >
+  The harness agent takes actions in the world (writing files, running commands,
+  calling APIs) only when those actions are clearly scoped to what the user asked.
+  It never produces output that appears to come from the user — on GitHub, in
+  commits, in messages, or anywhere else — without the user's explicit instruction
+  for that specific output in that session.
+anti-patterns:
+  - Posting a GitHub comment "as the user" because the user said "go ahead" earlier
+  - Adding a commit message in first person as if the user wrote it
+  - Opening a PR description that reads as the user's own words without being asked
+  - Interpreting a general approval as a blanket authorization for future writes
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-06-08"

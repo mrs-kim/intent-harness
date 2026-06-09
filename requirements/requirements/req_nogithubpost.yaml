@@ -1,0 +1,20 @@
+id: req_nogithubpost
+type: requirement
+title: Agent never posts to GitHub without explicit user confirmation
+domain: dom_hrns4x2k
+behavior: >
+  The harness agent and CLI never post comments, open issues, create PRs,
+  or take any action that writes to GitHub on the user's behalf without
+  the user explicitly requesting that specific action in the same session.
+  Confirmation from a previous session or a general "go ahead" does not
+  authorize future GitHub writes.
+rationale: >
+  GitHub actions appear under the user's identity and are visible to others.
+  Acting without confirmation is impersonation — the user did not say those
+  words and cannot unsay them. Trust requires that the agent only speaks
+  when spoken through.
+status:
+  legitimacy: approved
+  lifecycle: active
+meta:
+  created: "2026-06-08"

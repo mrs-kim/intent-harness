@@ -208,6 +208,18 @@ meta:
     console.log("  ⚠ npm install failed — run it manually in .intent/");
   }
 
+  // Install git hooks
+  console.log("\nInstalling git hooks...");
+  installHooks();
+
+  // Add session file to .gitignore
+  const ignorePath = path.join(process.cwd(), ".gitignore");
+  const ignoreEntry = ".intent/session.json";
+  if (!fs.existsSync(ignorePath) || !fs.readFileSync(ignorePath, "utf8").includes(ignoreEntry)) {
+    fs.appendFileSync(ignorePath, `\n${ignoreEntry}\n`);
+    console.log(`  ✓ .gitignore`);
+  }
+
   console.log(`
 ──────────────────────────────────────
 ✓ Harness initialized
@@ -235,6 +247,162 @@ Run locally:
 Domain created: ${domainId}
 ──────────────────────────────────────
 `);
+}
+
+// ─── install-hooks command ───────────────────────────────────────────────────
+
+function installHooks() {
+  const cwd = process.cwd();
+  const gitDir = path.join(cwd, ".git");
+
+  if (!fs.existsSync(gitDir)) {
+    console.error("\n✗ Not a git repository.\n");
+    process.exit(1);
+  }
+
+  const hooksDir = path.join(gitDir, "hooks");
+  fs.mkdirSync(hooksDir, { recursive: true });
+
+  const hookScript = [
+    "#!/bin/sh",
+    "# intent-harness: commit-msg enforcement",
+    'SESSION=".intent/session.json"',
+    '[ ! -f "$SESSION" ] && exit 0',
+    "ISSUE=$(node -e 'try{process.stdout.write(String(require(\"./.intent/session.json\").issue||\"\"))}catch(e){}' 2>/dev/null)",
+    '[ -z "$ISSUE" ] && exit 0',
+    'grep -qE "#$ISSUE" "$1" && exit 0',
+    "DESC=$(node -e 'try{process.stdout.write(require(\"./.intent/session.json\").description||\"\")}catch(e){}' 2>/dev/null)",
+    'echo ""',
+    'echo "  ✗ Commit blocked — active session requires issue reference"',
+    'echo "    Add #$ISSUE to your commit message"',
+    'echo "    Session: $DESC"',
+    'echo ""',
+    "exit 1",
+    "",
+  ].join("\n");
+
+  const hookPath = path.join(hooksDir, "commit-msg");
+  fs.writeFileSync(hookPath, hookScript, { mode: 0o755 });
+  console.log(`  ✓ .git/hooks/commit-msg`);
+}
+
+// ─── start-work command ───────────────────────────────────────────────────────
+
+function startWork() {
+  const description = process.argv.slice(3).join(" ").trim();
+  if (!description) {
+    console.error("\nUsage: intent start-work <description>\n");
+    process.exit(1);
+  }
+
+  const cwd = process.cwd();
+  const sessionPath = path.join(cwd, ".intent", "session.json");
+
+  if (fs.existsSync(sessionPath)) {
+    const existing = JSON.parse(fs.readFileSync(sessionPath, "utf8"));
+    console.error(`\n✗ Session already active: #${existing.issue} — "${existing.description}"`);
+    console.error(`  Run: intent wrap-up\n`);
+    process.exit(1);
+  }
+
+  // Install hooks if missing
+  const hookPath = path.join(cwd, ".git", "hooks", "commit-msg");
+  if (!fs.existsSync(hookPath)) {
+    console.log("  Installing commit-msg hook...");
+    installHooks();
+  }
+
+  // Snapshot HEAD so wrap-up can diff from here
+  let startSha = "";
+  try {
+    startSha = execSync("git rev-parse HEAD", { cwd, encoding: "utf8" }).trim();
+  } catch (e) {}
+
+  // Create GitHub issue
+  let issueNumber = null;
+  let issueUrl = null;
+  try {
+    issueUrl = execSync(
+      `gh issue create --title ${JSON.stringify(description)} --body ""`,
+      { cwd, encoding: "utf8" }
+    ).trim();
+    issueNumber = parseInt(issueUrl.split("/").pop());
+  } catch (e) {
+    console.log(`  ⚠ GitHub issue creation failed — session will be local only`);
+  }
+
+  // Create and checkout branch
+  const slug = description.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+  const branch = issueNumber ? `work/${issueNumber}-${slug}` : `work/${slug}`;
+  try {
+    execSync(`git checkout -b ${branch}`, { cwd, stdio: "inherit" });
+  } catch (e) {
+    console.log(`  ⚠ Could not create branch: ${e.message.slice(0, 80)}`);
+  }
+
+  const session = { issue: issueNumber, branch, description, started: new Date().toISOString().split("T")[0], startSha };
+  if (issueUrl) session.issueUrl = issueUrl;
+
+  fs.mkdirSync(path.join(cwd, ".intent"), { recursive: true });
+  fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2));
+
+  // Add session.json to .gitignore if not already there
+  const ignorePath = path.join(cwd, ".gitignore");
+  const ignoreEntry = ".intent/session.json";
+  if (!fs.existsSync(ignorePath) || !fs.readFileSync(ignorePath, "utf8").includes(ignoreEntry)) {
+    fs.appendFileSync(ignorePath, `\n${ignoreEntry}\n`);
+  }
+
+  console.log(`\n✓ Session started`);
+  if (issueNumber) console.log(`  Issue:  #${issueNumber} — ${issueUrl}`);
+  console.log(`  Branch: ${branch}`);
+  if (issueNumber) console.log(`  Commits must include #${issueNumber} in the message`);
+  console.log();
+}
+
+// ─── wrap-up command ──────────────────────────────────────────────────────────
+
+async function wrapUp() {
+  const cwd = process.cwd();
+  const sessionPath = path.join(cwd, ".intent", "session.json");
+
+  if (!fs.existsSync(sessionPath)) {
+    console.error("\n✗ No active session. Run: intent start-work <description>\n");
+    process.exit(1);
+  }
+
+  const session = JSON.parse(fs.readFileSync(sessionPath, "utf8"));
+
+  // Check for requirement changes since session started
+  let reqsTouched = false;
+  try {
+    const range = session.startSha ? `${session.startSha}..HEAD` : `--since="${session.started}"`;
+    const committed = execSync(
+      `git log --name-only --pretty=format: ${range} -- requirements/`,
+      { cwd, encoding: "utf8" }
+    ).trim();
+    const staged = execSync("git diff --cached --name-only -- requirements/", { cwd, encoding: "utf8" }).trim();
+    reqsTouched = committed.length > 0 || staged.length > 0;
+  } catch (e) {}
+
+  if (!reqsTouched) {
+    console.log(`\n⚠ No requirement files were updated in this session.`);
+    console.log(`  If any behavior changed, update requirements/ to reflect it.\n`);
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const reason = await new Promise(resolve => rl.question("  Skip reason (leave blank to go update requirements first): ", resolve));
+    rl.close();
+    if (!reason.trim()) {
+      console.log("\n  Update requirements/ then run: intent wrap-up\n");
+      process.exit(1);
+    }
+    console.log(`  Noted: "${reason.trim()}"`);
+  }
+
+  fs.unlinkSync(sessionPath);
+
+  console.log(`\n✓ Session closed: #${session.issue || "local"} — "${session.description}"`);
+  if (session.issueUrl) console.log(`  Close the issue: ${session.issueUrl}`);
+  console.log();
 }
 
 // ─── Upgrade ──────────────────────────────────────────────────────────────────
@@ -394,6 +562,13 @@ if (command === "init") {
 } else if (command === "decisions") {
   process.argv = [process.argv[0], process.argv[1], "--check=all"];
   require("./agents/decision-agent.js");
+} else if (command === "start-work") {
+  startWork();
+} else if (command === "wrap-up") {
+  wrapUp().catch(console.error);
+} else if (command === "install-hooks") {
+  installHooks();
+  console.log();
 } else if (command === "ingest") {
   // Pass remaining args through to ingest agent
   process.argv = [process.argv[0], process.argv[1], ...process.argv.slice(3)];
@@ -445,6 +620,9 @@ Commands:
   intent review                        Browse proposed records in the browser
   intent review --all                  Browse all records including approved
   intent review --domain=<id>          Limit review to one domain
+  intent start-work <description>      Start a work session (creates issue + branch)
+  intent wrap-up                       Close session (checks requirements were updated)
+  intent install-hooks                 Install git hooks in the current repo
 
 Ingest examples:
   intent ingest --from=./docs/

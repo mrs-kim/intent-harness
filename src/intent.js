@@ -325,10 +325,13 @@ function startWork() {
   let issueNumber = null;
   let issueUrl = null;
   try {
+    const bodyFile = path.join(require("os").tmpdir(), `intent-issue-${Date.now()}.md`);
+    fs.writeFileSync(bodyFile, body);
     issueUrl = execSync(
-      `gh issue create --title ${JSON.stringify(description)} --body ${JSON.stringify(body)}`,
+      `gh issue create --title ${JSON.stringify(description)} --body-file ${JSON.stringify(bodyFile)}`,
       { cwd, encoding: "utf8" }
     ).trim();
+    fs.unlinkSync(bodyFile);
     issueNumber = parseInt(issueUrl.split("/").pop());
   } catch (e) {
     console.log(`  ⚠ GitHub issue creation failed — session will be local only`);

@@ -45,6 +45,50 @@ jobs:
               body: `## ✗ Requirement gate failed\n\nSchema validation or graph integrity errors were found.\nRun \`intent validate\` locally to see the full output.\n\nRequirement records must be valid and all ID references must resolve before this PR can merge.`
             })
 
+  check-requirements-updated:
+    name: Code changes must include a requirements update
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check skip label
+        id: skip
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            if (labels.includes('skip-req-gate')) {
+              core.info('skip-req-gate label present — skipping check');
+              return 'true';
+            }
+            return 'false';
+          result-encoding: string
+
+      - name: Get changed files
+        id: changed
+        if: steps.skip.outputs.result != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 100
+            });
+            const srcChanged = files.some(f => f.filename.startsWith('src/'));
+            const reqChanged = files.some(f => f.filename.startsWith('requirements/'));
+            core.setOutput('src_changed', String(srcChanged));
+            core.setOutput('req_changed', String(reqChanged));
+
+      - name: Fail if src changed without requirements
+        if: steps.skip.outputs.result != 'true' && steps.changed.outputs.src_changed == 'true' && steps.changed.outputs.req_changed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.setFailed(
+              'This PR changes src/ without updating requirements/.\n' +
+              'Add or update at least one requirement record, or add the skip-req-gate label with a reason in the PR description.'
+            );
+
   check-pr-fields:
     name: Check PR template fields
     runs-on: ubuntu-latest

@@ -334,11 +334,12 @@ function startWork() {
     console.log(`  ⚠ GitHub issue creation failed — session will be local only`);
   }
 
-  // Create and checkout branch
+  // Create, checkout, and push branch to set upstream
   const slug = description.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
   const branch = issueNumber ? `work/${issueNumber}-${slug}` : `work/${slug}`;
   try {
     execSync(`git checkout -b ${branch}`, { cwd, stdio: "inherit" });
+    execSync(`git push --set-upstream origin ${branch}`, { cwd, stdio: "inherit" });
   } catch (e) {
     console.log(`  ⚠ Could not create branch: ${e.message.slice(0, 80)}`);
   }
@@ -404,7 +405,24 @@ async function wrapUp() {
   fs.unlinkSync(sessionPath);
 
   console.log(`\n✓ Session closed: #${session.issue || "local"} — "${session.description}"`);
-  if (session.issueUrl) console.log(`  Close the issue: ${session.issueUrl}`);
+
+  // Offer to open a PR
+  if (session.issueUrl && session.branch) {
+    const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const openPr = await new Promise(resolve => rl2.question("  Open a PR now? (y/n): ", resolve));
+    rl2.close();
+    if (openPr.trim().toLowerCase() === "y") {
+      try {
+        const prUrl = execSync(
+          `gh pr create --title ${JSON.stringify(session.description)} --body ${JSON.stringify(`Closes ${session.issueUrl}`)} --head ${session.branch}`,
+          { cwd, encoding: "utf8" }
+        ).trim();
+        console.log(`  PR: ${prUrl}`);
+      } catch (e) {
+        console.log(`  ⚠ Could not open PR: ${e.message.slice(0, 100)}`);
+      }
+    }
+  }
   console.log();
 }
 

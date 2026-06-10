@@ -1,0 +1,21 @@
+id: req_startwork_ux
+type: requirement
+title: start-work sets upstream branch and wrap-up offers to open a PR
+domain: dom_hrns4x2k
+behavior: >
+  After creating and checking out the work branch, start-work immediately
+  pushes it with --set-upstream so that subsequent git push calls work
+  without flags. After closing the session, wrap-up prompts the user to
+  open a PR; if they confirm, it runs gh pr create with the session
+  description as the title and a "Closes <issue-url>" body.
+rationale: >
+  Both friction points were discovered on first real use of the workflow.
+  The upstream push removes a confusing error on the first git push.
+  The PR prompt closes the loop at the natural end of the session rather
+  than requiring a separate manual step.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-09"
+  github-issue: 16

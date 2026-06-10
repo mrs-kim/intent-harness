@@ -340,6 +340,7 @@ function generatePage(graph, args) {
   </div>
   <div style="display:flex;align-items:center;gap:16px">
     <span class="approved-count" id="approvedCount"></span>
+    <button id="publishBtn" onclick="runPublish()" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:600;color:white;background:#2da44e;border:none;cursor:pointer">Publish</button>
     <nav style="display:flex;gap:4px">
       <a href="/ingest" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:500;color:#8b949e;text-decoration:none">Ingest</a>
       <a href="/" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:500;color:white;background:rgba(255,255,255,.15);text-decoration:none">Review</a>
@@ -595,6 +596,24 @@ function generatePage(graph, args) {
       showToast('Error: ' + err.message, true);
     }
   });
+
+  // Publish
+  async function runPublish() {
+    const btn = document.getElementById('publishBtn');
+    btn.disabled = true;
+    btn.textContent = 'Publishing…';
+    try {
+      const res = await fetch('/api/publish', { method: 'POST' });
+      const { output, ok } = await res.json();
+      showToast(ok ? 'Published — PR opened' : 'Publish failed', !ok);
+      console.log(output);
+    } catch (e) {
+      showToast('Publish error: ' + e.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Publish';
+    }
+  }
 
   // Store initial domain value for cancel support
   document.querySelectorAll('.domain-select').forEach(s => { s.dataset.prev = s.value; });
@@ -973,6 +992,22 @@ function startServer(graph, args, port) {
       const job = activeJobId ? jobs.get(activeJobId) : null;
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ id: activeJobId, running: !!(job && !job.done) }));
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/api/publish") {
+      const agentScript = path.join(__dirname, "intent.js");
+      const child = spawn("node", [agentScript, "publish"], {
+        env: { ...process.env, INTENT_ROOT },
+        cwd: INTENT_ROOT,
+      });
+      let output = "";
+      child.stdout.on("data", d => { output += d; });
+      child.stderr.on("data", d => { output += d; });
+      child.on("close", code => {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ output, ok: code === 0 }));
+      });
       return;
     }
 

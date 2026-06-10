@@ -429,6 +429,89 @@ async function wrapUp() {
   console.log();
 }
 
+// ─── publish command ─────────────────────────────────────────────────────────
+
+async function publish() {
+  const cwd = process.env.INTENT_ROOT || process.cwd();
+  const requirementsDir = path.join(cwd, "requirements");
+  const yaml = require("js-yaml");
+
+  if (!fs.existsSync(requirementsDir)) {
+    console.error("\n✗ No requirements/ directory found. Is this a harness project?\n");
+    process.exit(1);
+  }
+
+  // Find all modified or untracked requirement files
+  const modified = execSync("git status --short -- requirements/", { cwd, encoding: "utf8" })
+    .split("\n")
+    .map(l => l.trim())
+    .filter(Boolean)
+    .map(l => l.slice(2).trim()); // strip status chars
+
+  if (modified.length === 0) {
+    console.log("\n✓ Nothing to publish — no uncommitted changes in requirements/\n");
+    return;
+  }
+
+  // Filter to approved records only
+  const toPublish = [];
+  for (const rel of modified) {
+    const full = path.join(cwd, rel);
+    if (!full.endsWith(".yaml") && !full.endsWith(".yml")) continue;
+    if (!fs.existsSync(full)) continue;
+    try {
+      const record = yaml.load(fs.readFileSync(full, "utf8"));
+      if (record?.status?.legitimacy === "approved") toPublish.push({ rel, full, record });
+    } catch (e) {}
+  }
+
+  if (toPublish.length === 0) {
+    console.log(`\n⚠ ${modified.length} modified requirement file(s) found, but none are approved.`);
+    console.log(`  Approve records in the review UI first, then run: intent publish\n`);
+    return;
+  }
+
+  const skipped = modified.length - toPublish.length;
+  console.log(`\nPublishing ${toPublish.length} approved record(s)${skipped > 0 ? ` (${skipped} unapproved skipped)` : ""}:\n`);
+  toPublish.forEach(({ record }) => console.log(`  ${record.type.padEnd(16)} ${record.title}`));
+
+  // Create branch
+  const date = new Date().toISOString().slice(0, 10);
+  const branch = `publish/${date}`;
+  try {
+    execSync(`git checkout -b ${branch}`, { cwd, stdio: "inherit" });
+    execSync(`git push --set-upstream origin ${branch}`, { cwd, stdio: "inherit" });
+  } catch (e) {
+    // Branch may already exist
+    try { execSync(`git checkout ${branch}`, { cwd, stdio: "inherit" }); } catch {}
+  }
+
+  // Stage and commit approved files
+  const files = toPublish.map(({ rel }) => rel).join(" ");
+  execSync(`git add ${files}`, { cwd, stdio: "inherit" });
+
+  const types = [...new Set(toPublish.map(({ record }) => record.type))].join(", ");
+  const commitMsg = `publish: ${toPublish.length} approved ${types} record(s)`;
+  execSync(`git commit -m ${JSON.stringify(commitMsg)}`, { cwd, stdio: "inherit" });
+  execSync("git push", { cwd, stdio: "inherit" });
+
+  // Open PR
+  const body = [
+    `${toPublish.length} approved requirement record(s) ready for merge.\n`,
+    toPublish.map(({ record }) => `- **${record.type}**: ${record.title}`).join("\n"),
+  ].join("\n");
+
+  const bodyFile = path.join(require("os").tmpdir(), `intent-publish-${Date.now()}.md`);
+  fs.writeFileSync(bodyFile, body);
+  const prUrl = execSync(
+    `gh pr create --title ${JSON.stringify(commitMsg)} --body-file ${JSON.stringify(bodyFile)} --head ${branch}`,
+    { cwd, encoding: "utf8" }
+  ).trim();
+  fs.unlinkSync(bodyFile);
+
+  console.log(`\n✓ PR opened: ${prUrl}\n`);
+}
+
 // ─── Upgrade ──────────────────────────────────────────────────────────────────
 
 /**
@@ -586,6 +669,8 @@ if (command === "init") {
 } else if (command === "decisions") {
   process.argv = [process.argv[0], process.argv[1], "--check=all"];
   require("./agents/decision-agent.js");
+} else if (command === "publish") {
+  publish().catch(console.error);
 } else if (command === "start-work") {
   startWork();
 } else if (command === "wrap-up") {
@@ -644,6 +729,7 @@ Commands:
   intent review                        Browse proposed records in the browser
   intent review --all                  Browse all records including approved
   intent review --domain=<id>          Limit review to one domain
+  intent publish                       Commit approved records and open a PR
   intent start-work <description>      Start a work session (creates issue + branch)
   intent wrap-up                       Close session (checks requirements were updated)
   intent install-hooks                 Install git hooks in the current repo

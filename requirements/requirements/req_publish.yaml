@@ -1,0 +1,22 @@
+id: req_publish
+type: requirement
+title: publish commits approved requirement records to git and opens a PR
+domain: dom_hrns4x2k
+behavior: >
+  Running `intent publish` finds all requirement files under requirements/
+  that are untracked or modified in git, filters to those with
+  legitimacy: approved, creates a publish/<date> branch, commits and pushes
+  those files, and opens a PR. Unapproved modified files are skipped with
+  a count shown. If nothing is approved, it exits with a clear message.
+  A Publish button in the review UI header calls POST /api/publish which
+  runs the same logic server-side and shows the PR URL as a toast.
+rationale: >
+  Without publish, approved records exist only on disk with no path to the
+  shared repo. This closes the ingest → review → publish loop and makes
+  approval meaningful — a record isn't really approved until it's in git.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-09"
+  github-issue: 19

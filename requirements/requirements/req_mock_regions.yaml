@@ -1,0 +1,26 @@
+id: req_mock_regions
+type: requirement
+title: ingest --mock flag identifies UI regions and annotates the mock source file
+domain: dom_hrns4x2k
+behavior: >
+  When `intent ingest` is run with the `--mock` flag against a local source file,
+  the agent runs a region-identification pass before extraction: it calls Claude
+  to identify named UI regions (screens, panels, cards) present in the source and
+  returns a list of { name, slug, signals } objects. Those regions are printed to
+  the console and passed to each domain extraction call so extracted records can
+  carry a "screen" field with the region slug they belong to. After all domains
+  are processed, the agent writes @region / @end-region JSX comment annotations
+  back into the mock source file, marking where each identified region begins and
+  ends. The flag is explicit opt-in — omitting it leaves behavior unchanged.
+rationale: >
+  Mocks are the most concrete product artifact PMs have, but requirements extracted
+  from them lose their spatial context. By tagging records with the screen they came
+  from and annotating the source file itself, we create a durable link between the
+  living mock and the requirements graph — enabling navigation from requirement to
+  mock and vice versa.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-12"
+  github-issue: 22

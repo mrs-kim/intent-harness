@@ -172,7 +172,7 @@ function renderRecord(record, filePath, graph) {
 
 // ─── Page generation ──────────────────────────────────────────────────────────
 
-function generatePage(graph, args) {
+function generatePage(graph, args, mockFile = null) {
   const domains = graph.all("domain").filter(d => d.status?.lifecycle === "active");
   const showAll = args.all;
   const filterDomain = args.domain;
@@ -343,6 +343,19 @@ function generatePage(graph, args) {
 
     .empty { text-align: center; padding: 60px; color: #656d76; }
     .empty h2 { font-size: 18px; margin-bottom: 8px; }
+
+    .mock-panel { position: fixed; top: 0; right: 0; width: 420px; height: 100vh; background: #111; border-left: 1px solid #333; z-index: 200; display: none; flex-direction: column; }
+    .mock-panel.open { display: flex; }
+    .mock-panel-header { padding: 10px 14px; background: #1a1a1a; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .mock-panel-title { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+    .mock-panel-close { background: none; border: none; color: #666; font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .mock-panel-close:hover { color: #fff; background: #333; }
+    .mock-panel iframe { flex: 1; border: none; }
+    body.mock-open .main { margin-right: 420px; }
+    body.mock-open .filter-bar { right: 420px; }
+    .btn-mock { padding: 5px 14px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: white; }
+    .btn-mock:hover { background: rgba(255,255,255,.2); }
+    .btn-mock.active { background: #F5A623; border-color: #F5A623; color: #000; }
   </style>
 </head>
 <body>
@@ -355,6 +368,7 @@ function generatePage(graph, args) {
   <div style="display:flex;align-items:center;gap:16px">
     <span class="approved-count" id="approvedCount"></span>
     <button id="publishBtn" onclick="runPublish()" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:600;color:white;background:#2da44e;border:none;cursor:pointer">Publish</button>
+    ${mockFile ? `<button class="btn-mock" id="mockToggle" onclick="toggleMock()">◱ Mock</button>` : ""}
     <nav style="display:flex;gap:4px">
       <a href="/ingest" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:500;color:#8b949e;text-decoration:none">Ingest</a>
       <a href="/" style="padding:5px 14px;border-radius:5px;font-size:12px;font-weight:500;color:white;background:rgba(255,255,255,.15);text-decoration:none">Review</a>
@@ -426,6 +440,14 @@ function generatePage(graph, args) {
 
 <div class="toast" id="toast"></div>
 
+${mockFile ? `<div class="mock-panel" id="mockPanel">
+  <div class="mock-panel-header">
+    <span class="mock-panel-title">Mock Preview</span>
+    <button class="mock-panel-close" onclick="toggleMock()">✕</button>
+  </div>
+  <iframe id="mockFrame" src="/mock"></iframe>
+</div>` : ""}
+
 <script>
   const filters = { type: 'all', legitimacy: 'all', confidence: 'all', implementation: 'all', domain: 'all', screen: 'all' };
   let approvedThisSession = 0;
@@ -489,6 +511,21 @@ function generatePage(graph, args) {
       const slug = el.dataset.screen;
       setScreenFilter(filters.screen === slug ? 'all' : slug);
     });
+  });
+
+  function toggleMock() {
+    const panel = document.getElementById('mockPanel');
+    const btn = document.getElementById('mockToggle');
+    if (!panel) return;
+    const open = panel.classList.toggle('open');
+    document.body.classList.toggle('mock-open', open);
+    if (btn) btn.classList.toggle('active', open);
+  }
+
+  window.addEventListener('message', e => {
+    if (e.data?.type === 'region-click') {
+      setScreenFilter(e.data.slug === filters.screen ? 'all' : e.data.slug);
+    }
   });
 
   function showToast(msg, error = false) {
@@ -925,8 +962,88 @@ const TYPE_DIRS = {
   "design-spec": "design-specs", requirement: "requirements", decision: "decisions",
 };
 
+function findMockFile() {
+  const mockJson = path.join(process.cwd(), ".intent", "mock.json");
+  try {
+    const { file } = JSON.parse(fs.readFileSync(mockJson, "utf8"));
+    if (file && fs.existsSync(file)) return file;
+  } catch {}
+  return null;
+}
+
+function generateMockPage(mockPath) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0a; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  #root { display: flex; align-items: center; justify-content: center; }
+  .region-highlight { outline: 2px solid rgba(249,115,22,0.7); outline-offset: -1px; cursor: pointer; transition: outline 0.1s; }
+  #region-toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #F5A623; color: #000; font-family: -apple-system,sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 6px 14px; border-radius: 20px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  #region-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="region-toast"></div>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+  const { useState, useEffect, useRef, useCallback } = React;
+
+  fetch('/api/mock-source')
+    .then(r => r.text())
+    .then(src => {
+      try {
+        const transpiled = Babel.transform(src, { presets: ['react'] }).code;
+        const fn = new Function('React', 'ReactDOM', transpiled + '\\nReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));');
+        fn(React, ReactDOM);
+      } catch(e) {
+        document.getElementById('root').innerHTML = '<div style="color:#e53935;font-family:monospace;padding:20px;font-size:12px">Render error: ' + e.message + '</div>';
+      }
+    });
+
+  let activeRegion = null;
+  const toast = document.getElementById('region-toast');
+
+  function showToast(name) {
+    toast.textContent = name.replace(/-/g,' ').toUpperCase();
+    toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove('show'), 1400);
+  }
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-region]');
+    if (el && el !== activeRegion) {
+      if (activeRegion) activeRegion.classList.remove('region-highlight');
+      el.classList.add('region-highlight');
+      activeRegion = el;
+    } else if (!el && activeRegion) {
+      activeRegion.classList.remove('region-highlight');
+      activeRegion = null;
+    }
+  });
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-region]');
+    if (el) {
+      const slug = el.dataset.region;
+      showToast(slug);
+      window.parent.postMessage({ type: 'region-click', slug }, '*');
+    }
+  }, true);
+</script>
+</body>
+</html>`;
+}
+
 function startServer(graph, args, port) {
-  const html = generatePage(graph, args);
+  const mockFile = findMockFile();
+  const html = generatePage(graph, args, mockFile);
   const ingestHtml = generateIngestPage();
   const agentScript = path.join(__dirname, "agents", "ingest-agent.js");
   const jobs = new Map(); // id -> { output, done, error }
@@ -942,6 +1059,28 @@ function startServer(graph, args, port) {
     if (req.method === "GET" && req.url === "/ingest") {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       res.end(ingestHtml);
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/mock") {
+      if (!mockFile) { res.writeHead(404); res.end("No mock file found"); return; }
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(generateMockPage(mockFile));
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/api/mock-source") {
+      if (!mockFile) { res.writeHead(404); res.end(""); return; }
+      let src = fs.readFileSync(mockFile, "utf8");
+      // Strip import statements and replace with React hook destructuring
+      src = src.replace(/^import\s+\{([^}]+)\}\s+from\s+["']react["'];?\n?/m, (_, names) => {
+        const hooks = names.split(",").map(n => n.trim()).filter(Boolean);
+        return `const { ${hooks.join(", ")} } = React;\n`;
+      });
+      src = src.replace(/^import\s+.*\n?/gm, "");
+      src = src.replace(/^export\s+default\s+/m, "");
+      res.writeHead(200, { "content-type": "application/javascript; charset=utf-8" });
+      res.end(src);
       return;
     }
 

@@ -649,7 +649,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 1000));
   }
 
-  // Write @region annotations back to the mock file
+  // Write @region annotations back to the mock file and save path for review server
   if (args.flags.mock && mockSourcePath && regions.length > 0) {
     const fs = require("fs");
     const original = fs.readFileSync(mockSourcePath, "utf8");
@@ -658,6 +658,10 @@ async function main() {
       fs.writeFileSync(mockSourcePath, annotated, "utf8");
       console.log(`\n✓ Annotations written to ${mockSourcePath}`);
     }
+    const intentDir = path.join(process.cwd(), ".intent");
+    if (!fs.existsSync(intentDir)) fs.mkdirSync(intentDir, { recursive: true });
+    fs.writeFileSync(path.join(intentDir, "mock.json"), JSON.stringify({ file: mockSourcePath }, null, 2));
+    console.log(`✓ Mock path saved to .intent/mock.json`);
   }
 
   // Final report

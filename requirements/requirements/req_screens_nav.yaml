@@ -1,0 +1,23 @@
+id: req_screens_nav
+type: requirement
+title: screens panel in nav sidebar acts as visual table of contents for the mock
+domain: dom_hrns4x2k
+behavior: >
+  When the review UI loads records that carry a screen field, a Screens
+  section appears below Domains in the left nav sidebar. Each screen is
+  shown with its name and record count. Clicking a screen filters the
+  main view to only records tagged with that slug and highlights the
+  active item. Clicking the active screen again clears the filter. The
+  screen dropdown in the filter bar stays in sync with the nav selection.
+  The section is absent when no records have screen fields.
+rationale: >
+  The dropdown filter from Phase 2 is functional but not spatial. The nav
+  sidebar turns the identified regions into a visual table of contents that
+  mirrors the structure of the mock, letting a PM navigate the requirements
+  graph the same way they'd navigate the product itself.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-13"
+  github-issue: 28

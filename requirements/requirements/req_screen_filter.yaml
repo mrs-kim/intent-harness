@@ -1,0 +1,20 @@
+id: req_screen_filter
+type: requirement
+title: review UI shows screen filter when records have screen fields
+domain: dom_hrns4x2k
+behavior: >
+  When the review UI loads and any records carry a "screen" field (set during
+  --mock ingest), a Screen dropdown appears in the filter bar. Selecting a
+  screen hides all records not tagged with that slug. The dropdown is absent
+  when no records have screen fields, so projects that have not run --mock
+  ingest are unaffected.
+rationale: >
+  Records extracted from a mock carry spatial context (which screen they came
+  from) but the review UI had no way to use it. The screen filter lets a PM
+  focus on one region of the product at a time during review.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-13"
+  github-issue: 24

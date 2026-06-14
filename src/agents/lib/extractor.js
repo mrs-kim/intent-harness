@@ -193,20 +193,19 @@ If UI regions are provided, add a "screen" field to each record with the slug of
 
 const RECONCILE_SYSTEM = `You are reconciling extracted product requirement records from multiple document chunks.
 
-The same document was processed in chunks and each chunk produced extracted records.
-Your job is to merge these into a clean, deduplicated set.
+The same document was processed in chunks and each chunk produced extracted records of one type.
+Your job is to merge these into a clean, deduplicated array of that same type.
 
 Rules:
 - Merge records that describe the same behavior (even if worded differently)
 - When merging, use the most complete and clear version
-- When two records CONTRADICT each other, keep BOTH as a single DECISION record with outcome "unresolved"
-  The decision title should describe the contradiction. The rationale should explain both sides.
+- When two records CONTRADICT each other, keep BOTH as a single record with outcome "unresolved" and confidence "low"
 - Confidence: if any source had "low", merged record is "low". If any had "medium" and none "low", use "medium".
 - Remove true duplicates (same behavior, same confidence, nothing added by having both)
 - Do not invent new records
 - Do not remove records unless they are true duplicates
 
-Respond ONLY with JSON in the same format as the input. No preamble. No markdown fences.`;
+Respond ONLY with a JSON array of records in the same format as the input. No preamble. No markdown fences.`;
 
 // ─── Mock region identification ──────────────────────────────────────────────
 
@@ -374,11 +373,26 @@ async function extractForDomain(domain, chunk, existingGraphSummary = "", region
  * @param {Object[]} extractions - Array of extraction results from each chunk
  * @returns {Promise<Object>} - Merged { jobs, requirements, decisions, design_principles }
  */
+async function reconcileType(typeName, records) {
+  if (records.length <= 5) return records;
+  const response = await callClaude(
+    RECONCILE_SYSTEM,
+    `Reconcile these extracted ${typeName} records:\n\n${JSON.stringify(records, null, 2)}`,
+    8192
+  );
+  try {
+    const result = parseJson(response);
+    return Array.isArray(result) ? result : records;
+  } catch (e) {
+    console.warn(`    ⚠ Reconciliation parse failed (${typeName}): ${e.message.slice(0, 80)}`);
+    return records;
+  }
+}
+
 async function reconcile(extractions) {
   // If only one chunk, no reconciliation needed
   if (extractions.length === 1) return extractions[0];
 
-  // Merge all extractions into one JSON blob for Claude to reconcile
   const merged = {
     jobs: extractions.flatMap((e) => e.jobs || []),
     requirements: extractions.flatMap((e) => e.requirements || []),
@@ -386,30 +400,22 @@ async function reconcile(extractions) {
     design_principles: extractions.flatMap((e) => e.design_principles || []),
   };
 
-  // If total records is small, reconcile in one pass
   const totalRecords =
-    merged.jobs.length +
-    merged.requirements.length +
-    merged.decisions.length +
-    merged.design_principles.length;
+    merged.jobs.length + merged.requirements.length +
+    merged.decisions.length + merged.design_principles.length;
 
   if (totalRecords === 0) return merged;
-
-  // Don't call Claude if nothing to reconcile
   if (totalRecords <= 5) return merged;
 
-  const response = await callClaude(
-    RECONCILE_SYSTEM,
-    `Reconcile these extracted records:\n\n${JSON.stringify(merged, null, 2)}`,
-    4000
-  );
+  // Reconcile each type separately to avoid token limit truncation
+  const [jobs, requirements, decisions, design_principles] = await Promise.all([
+    reconcileType("job", merged.jobs),
+    reconcileType("requirement", merged.requirements),
+    reconcileType("decision", merged.decisions),
+    reconcileType("design_principle", merged.design_principles),
+  ]);
 
-  try {
-    return parseJson(response);
-  } catch (e) {
-    console.warn(`    ⚠ Reconciliation parse failed: ${e.message.slice(0, 100)}`);
-    return merged; // Fall back to unreconciled
-  }
+  return { jobs, requirements, decisions, design_principles };
 }
 
 // ─── Summary generation ───────────────────────────────────────────────────────

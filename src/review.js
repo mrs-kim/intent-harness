@@ -148,6 +148,7 @@ function renderRecord(record, filePath, graph) {
       data-type="${record.type}"
       data-legitimacy="${legitimacy}"
       data-domain="${domain || ""}"
+      data-screen="${record.screen || ""}"
       data-confidence="${confidence || ""}"
       data-implementation="${implementation || ""}">
       <div class="record-header">
@@ -226,6 +227,11 @@ function generatePage(graph, args) {
   const domainOptions = domains
     .filter(d => graph.byDomain(d.id).some(r => r.type !== "domain"))
     .map(d => `<option value="${d.id}">${escape(d.title)}</option>`)
+    .join("");
+
+  const screenSlugs = [...new Set(allRecords.map(r => r.screen).filter(Boolean))];
+  const screenOptions = screenSlugs
+    .map(slug => `<option value="${slug}">${escape(slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()))}</option>`)
     .join("");
 
   const navItems = domains
@@ -388,6 +394,14 @@ function generatePage(graph, args) {
       ${domainOptions}
     </select>
   </div>
+  ${screenOptions ? `<div class="filter-sep"></div>
+  <div class="filter-group">
+    <span class="filter-label">Screen</span>
+    <select class="filter-select" id="screenFilter">
+      <option value="all">All screens</option>
+      ${screenOptions}
+    </select>
+  </div>` : ""}
 </div>
 
 <nav class="nav">
@@ -402,7 +416,7 @@ function generatePage(graph, args) {
 <div class="toast" id="toast"></div>
 
 <script>
-  const filters = { type: 'all', legitimacy: 'all', confidence: 'all', implementation: 'all', domain: 'all' };
+  const filters = { type: 'all', legitimacy: 'all', confidence: 'all', implementation: 'all', domain: 'all', screen: 'all' };
   let approvedThisSession = 0;
 
   function applyFilters() {
@@ -412,7 +426,8 @@ function generatePage(graph, args) {
         (filters.legitimacy === 'all' || r.dataset.legitimacy === filters.legitimacy) &&
         (filters.confidence === 'all' || r.dataset.confidence === filters.confidence) &&
         (filters.implementation === 'all' || r.dataset.implementation === filters.implementation) &&
-        (filters.domain === 'all' || r.dataset.domain === filters.domain);
+        (filters.domain === 'all' || r.dataset.domain === filters.domain) &&
+        (filters.screen === 'all' || r.dataset.screen === filters.screen);
       r.style.display = show ? '' : 'none';
     });
 
@@ -441,6 +456,14 @@ function generatePage(graph, args) {
     filters.domain = e.target.value;
     applyFilters();
   });
+
+  const screenFilterEl = document.getElementById('screenFilter');
+  if (screenFilterEl) {
+    screenFilterEl.addEventListener('change', e => {
+      filters.screen = e.target.value;
+      applyFilters();
+    });
+  }
 
   function showToast(msg, error = false) {
     const t = document.getElementById('toast');

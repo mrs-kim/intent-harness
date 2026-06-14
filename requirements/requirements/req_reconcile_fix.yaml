@@ -1,0 +1,21 @@
+id: req_reconcile_fix
+type: requirement
+title: reconciliation runs per record type to avoid token limit truncation
+domain: dom_hrns4x2k
+behavior: >
+  The reconcile pass in the ingest agent runs as four parallel Claude calls,
+  one per record type (jobs, requirements, decisions, design_principles), each
+  with a max_tokens of 8192. This replaces a single combined call that would
+  produce truncated JSON when domain extractions exceeded ~100 records total.
+  If any per-type reconciliation fails to parse, that type falls back to
+  unreconciled results while the other types still succeed.
+rationale: >
+  Reconciliation was silently failing for every domain on large mocks because
+  the combined JSON response exceeded the 4000-token limit. Records landed
+  with duplicates from all 14 extraction chunks unmerged.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-13"
+  github-issue: 26

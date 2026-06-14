@@ -234,6 +234,12 @@ function generatePage(graph, args) {
     .map(slug => `<option value="${slug}">${escape(slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()))}</option>`)
     .join("");
 
+  const screenNavItems = screenSlugs.map(slug => {
+    const count = allRecords.filter(r => r.screen === slug).length;
+    const name = slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return `<a class="nav-item screen-nav-item" data-screen="${slug}">${escape(name)}<span class="nav-count">${count}</span></a>`;
+  }).join("");
+
   const navItems = domains
     .filter(d => {
       const recs = graph.byDomain(d.id).filter(r => r.type !== "domain" && (showAll || r.status?.legitimacy === "proposed"));
@@ -271,9 +277,11 @@ function generatePage(graph, args) {
 
     .nav { width: 200px; position: fixed; top: 105px; left: 0; height: calc(100vh - 105px); overflow-y: auto; padding: 12px; background: white; border-right: 1px solid #d0d7de; }
     .nav-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #656d76; margin-bottom: 6px; }
-    .nav-item { display: block; padding: 5px 8px; border-radius: 5px; color: #1f2328; text-decoration: none; font-size: 12px; margin-bottom: 1px; }
+    .nav-item { display: block; padding: 5px 8px; border-radius: 5px; color: #1f2328; text-decoration: none; font-size: 12px; margin-bottom: 1px; cursor: pointer; }
     .nav-item:hover { background: #f6f8fa; }
+    .nav-item.active { background: #dbeafe; color: #0969da; font-weight: 500; }
     .nav-count { float: right; color: #656d76; font-size: 11px; }
+    .nav-sep { height: 1px; background: #d0d7de; margin: 10px 0; }
 
     .main { margin-left: 200px; padding: 20px 28px; max-width: 940px; }
 
@@ -407,6 +415,9 @@ function generatePage(graph, args) {
 <nav class="nav">
   <div class="nav-label">Domains</div>
   ${navItems}
+  ${screenNavItems ? `<div class="nav-sep"></div>
+  <div class="nav-label">Screens</div>
+  ${screenNavItems}` : ""}
 </nav>
 
 <div class="main" id="main">
@@ -460,10 +471,25 @@ function generatePage(graph, args) {
   const screenFilterEl = document.getElementById('screenFilter');
   if (screenFilterEl) {
     screenFilterEl.addEventListener('change', e => {
-      filters.screen = e.target.value;
-      applyFilters();
+      setScreenFilter(e.target.value);
     });
   }
+
+  function setScreenFilter(slug) {
+    filters.screen = slug;
+    if (screenFilterEl) screenFilterEl.value = slug;
+    document.querySelectorAll('.screen-nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.screen === slug);
+    });
+    applyFilters();
+  }
+
+  document.querySelectorAll('.screen-nav-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const slug = el.dataset.screen;
+      setScreenFilter(filters.screen === slug ? 'all' : slug);
+    });
+  });
 
   function showToast(msg, error = false) {
     const t = document.getElementById('toast');

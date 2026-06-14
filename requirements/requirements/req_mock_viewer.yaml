@@ -1,0 +1,24 @@
+id: req_mock_viewer
+type: requirement
+title: review UI renders the mock in a side panel with clickable regions
+domain: dom_hrns4x2k
+behavior: >
+  When a project has been ingested with --mock, the review UI shows a
+  "Mock" button in the header. Clicking it opens a side panel (420px)
+  that renders the mock JSX file in an iframe using Babel standalone and
+  React from CDN. Hovering over a region highlights it with an orange
+  outline. Clicking a region filters the requirements list to records
+  tagged with that screen slug. Clicking the same region again clears
+  the filter. The mock path is saved to .intent/mock.json during ingest
+  and read by the review server to locate the file automatically.
+rationale: >
+  A flat list of 600+ records is unnavigable. The mock is how the PM
+  thinks about the product spatially. Rendering it in the review UI and
+  making regions clickable lets the reviewer navigate requirements the
+  same way they'd navigate the product itself.
+status:
+  legitimacy: proposed
+  lifecycle: active
+meta:
+  created: "2026-06-13"
+  github-issue: 30
